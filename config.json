@@ -1,0 +1,13 @@
+{
+  "email_ativo": true,
+  "frequencia": "trimestral",
+  "dia_do_mes": 1,
+  "horario": "20:46",
+  "destinatarios": [
+    "joaootaviolobo18@gmail.com"
+  ],
+  "assunto": "Relatorio de Movimentacoes - {periodo}",
+  "email_remetente": "Robo443133@gmail.com",
+  "senha_app": "aqer qvct snmb oskf",
+  "ultimo_envio": ""
+}

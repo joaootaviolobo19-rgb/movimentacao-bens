@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block titulo %}Cadastros{% endblock %}
+{% block conteudo %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Cadastros</h1>
+    <p class="page-sub">Gerencie funcionários, bens e locais do sistema</p>
+  </div>
+</div>
+
+<div class="tabs">
+  <a href="/cadastros/funcionarios" class="{% if tipo=='funcionarios' %}ativo{% endif %}">Funcionários</a>
+  <a href="/cadastros/bens" class="{% if tipo=='bens' %}ativo{% endif %}">Bens</a>
+  <a href="/cadastros/locais" class="{% if tipo=='locais' %}ativo{% endif %}">Locais</a>
+</div>
+
+<form class="card" method="POST" action="/cadastros/{{ tipo }}/salvar">
+  {% if em_edicao is not none %}
+    <input type="hidden" name="editar_idx" value="{{ em_edicao }}">
+  {% endif %}
+
+  <div class="card-title">
+    {% if em_edicao is not none %}Editar registro{% else %}Adicionar novo registro{% endif %}
+  </div>
+
+  <div class="grid">
+    {% for c in campos %}
+      <div class="campo {% if c in ('configuracao','observacao') %}full{% endif %}">
+        <label>{{ rotulos[c] }}</label>
+        {% if c == 'configuracao' %}
+          <textarea name="{{ c }}" rows="2">{% if em_edicao is not none %}{{ itens[em_edicao].get(c, '') }}{% endif %}</textarea>
+        {% elif c == 'estado' %}
+          <select name="{{ c }}">
+            {% set val = itens[em_edicao].get(c, '') if em_edicao is not none else '' %}
+            <option value="Novo" {% if val=='Novo' %}selected{% endif %}>Novo</option>
+            <option value="Bom" {% if val=='Bom' %}selected{% endif %}>Bom</option>
+            <option value="Regular" {% if val=='Regular' %}selected{% endif %}>Regular</option>
+            <option value="Ruim" {% if val=='Ruim' %}selected{% endif %}>Ruim</option>
+          </select>
+        {% elif c == 'categoria' %}
+          <select name="{{ c }}">
+            {% set val = itens[em_edicao].get(c, '') if em_edicao is not none else '' %}
+            <option value="">Selecione uma categoria</option>
+            <option value="Informática" {% if val=='Informática' %}selected{% endif %}>Informática</option>
+            <option value="Mobiliário" {% if val=='Mobiliário' %}selected{% endif %}>Mobiliário</option>
+            <option value="Telefonia" {% if val=='Telefonia' %}selected{% endif %}>Telefonia</option>
+            <option value="Eletrodoméstico" {% if val=='Eletrodoméstico' %}selected{% endif %}>Eletrodoméstico</option>
+            <option value="Veículo" {% if val=='Veículo' %}selected{% endif %}>Veículo</option>
+            <option value="Ferramenta" {% if val=='Ferramenta' %}selected{% endif %}>Ferramenta</option>
+            <option value="Outros" {% if val=='Outros' %}selected{% endif %}>Outros</option>
+          </select>
+        {% else %}
+          <input type="text" name="{{ c }}"
+                 value="{% if em_edicao is not none %}{{ itens[em_edicao].get(c, '') }}{% endif %}"
+                 {% if c in ('nome','patrimonio') %}required{% endif %}>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div style="display:flex;gap:10px;margin-top:16px;">
+    <button type="submit">{% if em_edicao is not none %}Salvar alterações{% else %}Adicionar{% endif %}</button>
+    {% if em_edicao is not none %}
+      <a href="/cadastros/{{ tipo }}" class="botao secundario">Cancelar</a>
+    {% endif %}
+  </div>
+</form>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--border);">
+    <span style="font-weight:700;">{{ itens|length }} registro(s)</span>
+  </div>
+  {% if itens %}
+    <table>
+      <thead>
+        <tr>
+          {% for c in campos %}<th>{{ rotulos[c] }}</th>{% endfor %}
+          <th style="text-align:right;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in itens %}
+          <tr>
+            {% for c in campos %}
+              <td>
+                {% if c == 'estado' %}
+                  <span class="badge {{ item.get(c,'')|lower }}">{{ item.get(c,'') }}</span>
+                {% elif c == 'categoria' and item.get(c) %}
+                  <span class="badge cat">{{ item.get(c,'') }}</span>
+                {% else %}
+                  {{ item.get(c, '') }}
+                {% endif %}
+              </td>
+            {% endfor %}
+            <td>
+              <div class="acoes-cell">
+                <a href="/cadastros/{{ tipo }}?editar={{ loop.index0 }}" class="botao secundario pequeno">Editar</a>
+                <form method="POST" action="/cadastros/{{ tipo }}/excluir/{{ loop.index0 }}"
+                      onsubmit="return confirm('Excluir este registro?');"
+                      style="display:inline;">
+                  <button type="submit" class="perigo">Excluir</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div style="padding:60px;text-align:center;color:var(--text-muted);">
+      Nenhum registro ainda. Use o formulário acima para adicionar.
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

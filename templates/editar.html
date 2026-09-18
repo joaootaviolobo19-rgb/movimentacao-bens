@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titulo %}Editar Movimentação{% endblock %}
+{% block conteudo %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Editar Movimentação</h1>
+    <p class="page-sub">ID #{{ mov.id }} — registrada em {{ mov.data_hora }}</p>
+  </div>
+</div>
+
+<form class="card grid" action="/editar/{{ mov.id }}" method="POST">
+  <div class="campo">
+    <label>Funcionário responsável</label>
+    <select name="funcionario" required>
+      {% for f in funcionarios %}
+        <option value="{{ f.nome }}" {% if mov.funcionario == f.nome %}selected{% endif %}>{{ f.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label>Bem / Item</label>
+    <select name="bem" required>
+      {% for b in bens %}
+        <option value="{{ b.patrimonio }}" {% if mov.bem == b.patrimonio %}selected{% endif %}>{{ b.patrimonio }} — {{ b.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label>Local de origem</label>
+    <select name="origem" required>
+      {% for l in locais %}
+        <option value="{{ l.nome }}" {% if mov.origem == l.nome %}selected{% endif %}>{{ l.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo">
+    <label>Destino</label>
+    <select name="destino" required>
+      {% for l in locais %}
+        <option value="{{ l.nome }}" {% if mov.destino == l.nome %}selected{% endif %}>{{ l.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="campo full">
+    <label>Observação</label>
+    <textarea name="observacao" rows="3">{{ mov.observacao }}</textarea>
+  </div>
+  <div class="campo full" style="display:flex;gap:10px;">
+    <button type="submit">Salvar alterações</button>
+    <a href="/historico" class="botao secundario">Cancelar</a>
+  </div>
+</form>
+
+{% endblock %}

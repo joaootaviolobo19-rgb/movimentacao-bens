@@ -1,0 +1,42 @@
+[
+  {
+    "patrimonio": "PAT0001",
+    "nome": "Notebook Dell Latitude 3420",
+    "categoria": "",
+    "estado": "Bom",
+    "configuracao": "",
+    "valor": ""
+  },
+  {
+    "patrimonio": "PAT0002",
+    "nome": "Monitor LG 24",
+    "categoria": "",
+    "estado": "Bom",
+    "configuracao": "",
+    "valor": ""
+  },
+  {
+    "patrimonio": "PAT0003",
+    "nome": "Impressora HP LaserJet",
+    "categoria": "",
+    "estado": "Bom",
+    "configuracao": "",
+    "valor": ""
+  },
+  {
+    "patrimonio": "PAT0004",
+    "nome": "Cadeira Gamer",
+    "categoria": "",
+    "estado": "Bom",
+    "configuracao": "",
+    "valor": ""
+  },
+  {
+    "patrimonio": "PAT0005",
+    "nome": "Celular Samsung A54",
+    "categoria": "",
+    "estado": "Bom",
+    "configuracao": "",
+    "valor": ""
+  }
+]

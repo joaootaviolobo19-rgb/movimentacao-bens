@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block titulo %}Planilha{% endblock %}
+{% block conteudo %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Planilha de Movimentações</h1>
+    <p class="page-sub">Visualização completa do arquivo CSV</p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="/planilha" class="botao secundario">Atualizar</a>
+    <a href="/exportar" class="botao">Baixar CSV</a>
+  </div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <div style="padding:16px 20px;background:#F8FAFC;border-bottom:1px solid var(--border);
+              display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+    <span style="font-weight:700;color:var(--text);">{{ total }} registro(s)</span>
+    <span style="font-size:12px;color:var(--text-muted);font-family:monospace;">{{ caminho_csv }}</span>
+  </div>
+  {% if movimentacoes %}
+    <div style="max-height:600px;overflow:auto;">
+      <table style="font-family:'SF Mono',Consolas,monospace;font-size:12px;">
+        <thead>
+          <tr>
+            <th style="position:sticky;top:0;background:#F8FAFC;text-align:right;width:50px;">#</th>
+            <th style="position:sticky;top:0;background:#F8FAFC;">ID</th>
+            <th style="position:sticky;top:0;background:#F8FAFC;">Data/Hora</th>
+            <th style="position:sticky;top:0;background:#F8FAFC;">Funcionário</th>
+            <th style="position:sticky;top:0;background:#F8FAFC;">Bem</th>
+            <th style="position:sticky;top:0;background:#F8FAFC;">Origem</th>
+            <th style="position:sticky;top:0;background:#F8FAFC;">Destino</th>
+            <th style="position:sticky;top:0;background:#F8FAFC;">Observação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in movimentacoes %}
+            <tr>
+              <td style="background:#F8FAFC;color:#64748B;text-align:right;font-weight:600;">{{ loop.index }}</td>
+              <td>{{ m.id }}</td>
+              <td>{{ m.data_hora }}</td>
+              <td>{{ m.funcionario }}</td>
+              <td>{{ m.bem_display }}</td>
+              <td>{{ m.origem }}</td>
+              <td>{{ m.destino }}</td>
+              <td>{{ m.observacao }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="padding:60px;text-align:center;color:var(--text-muted);">
+      Nenhuma movimentação registrada ainda.
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

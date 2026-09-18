@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block titulo %}Configurações{% endblock %}
+{% block conteudo %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Configurações de E-mail</h1>
+    <p class="page-sub">Defina como e quando os relatórios serão enviados</p>
+  </div>
+</div>
+
+<form class="card grid" action="/configuracoes" method="POST">
+
+  <div class="campo full" style="flex-direction:row;align-items:center;gap:10px;">
+    <input type="checkbox" name="email_ativo" id="email_ativo"
+           {% if cfg.email_ativo %}checked{% endif %} style="width:auto;">
+    <label for="email_ativo" style="margin:0;">Ativar envio automático de relatórios</label>
+  </div>
+
+  <div class="campo">
+    <label>Frequência</label>
+    <select name="frequencia">
+      <option value="diario" {% if cfg.frequencia == 'diario' %}selected{% endif %}>Diário</option>
+      <option value="semanal" {% if cfg.frequencia == 'semanal' %}selected{% endif %}>Semanal</option>
+      <option value="mensal" {% if cfg.frequencia == 'mensal' %}selected{% endif %}>Mensal</option>
+      <option value="trimestral" {% if cfg.frequencia == 'trimestral' %}selected{% endif %}>Trimestral</option>
+    </select>
+  </div>
+
+  <div class="campo">
+    <label>Dia do envio (mensal/trimestral)</label>
+    <input type="number" name="dia_do_mes" min="1" max="28" value="{{ cfg.dia_do_mes }}">
+  </div>
+
+  <div class="campo">
+    <label>Horário do envio</label>
+    <input type="time" name="horario" value="{{ cfg.horario }}">
+  </div>
+
+  <div class="campo">
+    <label>Assunto do e-mail</label>
+    <input type="text" name="assunto" value="{{ cfg.assunto }}">
+  </div>
+
+  <div class="campo full">
+    <label>Destinatários (separe por vírgula)</label>
+    <input type="text" name="destinatarios"
+           value="{{ cfg.destinatarios|join(', ') }}"
+           placeholder="chefe@empresa.com, ti@empresa.com">
+  </div>
+
+  <div class="campo">
+    <label>E-mail remetente</label>
+    <input type="email" name="email_remetente"
+           value="{{ cfg.email_remetente }}"
+           placeholder="sistema.bens@gmail.com">
+  </div>
+
+  <div class="campo">
+    <label>Senha de app (do Gmail)</label>
+    <input type="password" name="senha_app"
+           placeholder="{% if cfg.senha_app %}(deixe vazio para manter){% else %}cole aqui{% endif %}">
+  </div>
+
+  <div class="campo full" style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button type="submit">Salvar configurações</button>
+    <a href="/testar-email" class="botao secundario">Enviar e-mail de teste agora</a>
+  </div>
+</form>
+
+<div class="card">
+  <div class="card-title">Como funciona</div>
+  <ul style="line-height:1.8;color:#334155;padding-left:20px;">
+    <li><b>Frequência</b> — de quanto em quanto tempo o resumo vai por e-mail.</li>
+    <li><b>Dia</b> — para mensal/trimestral, o dia do mês em que o envio acontece.</li>
+    <li><b>Horário</b> — a hora exata do envio (o sistema verifica a cada minuto).</li>
+    <li><b>Destinatários</b> — quem recebe. Separe vários por vírgula.</li>
+    <li><b>E-mail remetente</b> — conta do Gmail criada para o sistema.</li>
+    <li><b>Senha de app</b> — gerada em <code>myaccount.google.com/apppasswords</code>.</li>
+    <li><b>Assunto</b> — use <code>{periodo}</code> para inserir o período automaticamente.</li>
+  </ul>
+</div>
+
+{% endblock %}
