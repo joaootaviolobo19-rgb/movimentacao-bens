@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Teia{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="text-muted small">Vínculos entre funcionários e bens</div>
+    <input id="busca" class="form-control form-control-sm" style="max-width:280px"
+           placeholder="Buscar funcionário..." oninput="filtrar()">
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div id="teia">
+        {% for t in teia %}
+            <div class="teia-node card mb-2" data-nome="{{t.nome|upper}}">
+                <div class="card-body py-3 px-3">
+                    <div class="d-flex align-items-center gap-3" role="button"
+                         data-bs-toggle="collapse" data-bs-target="#det{{loop.index}}">
+                        <div class="avatar-circle">{{ t.nome[:2]|upper }}</div>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">{{ t.nome }}</div>
+                            <div class="small text-muted">
+                                {{ t.cargo or "—" }}
+                                {% if t.setor %} · <span class="badge bg-secondary">{{ t.setor }}</span>{% endif %}
+                            </div>
+                            <div class="mt-1">
+                                {% for cat,q in t.por_categoria.items() %}
+                                <span class="badge bg-primary-subtle me-1">{{q}}× {{cat}}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fs-4 fw-bold text-primary">{{ t.total }}</div>
+                            <div class="small text-muted">bens</div>
+                        </div>
+                        <i class="bi bi-chevron-down text-muted"></i>
+                    </div>
+                    <div class="collapse mt-2" id="det{{loop.index}}">
+                        {% for cat, itens in t.bens|sort(attribute="categoria")|groupby("categoria") %}
+                        <div class="mb-3">
+                            <div class="text-uppercase small fw-bold text-primary border-bottom pb-1 mb-2">{{cat}}</div>
+                            <ul class="list-unstyled ms-3 mb-0">
+                                {% for b in itens %}
+                                <li class="small py-1 border-bottom">
+                                    <strong>{{b.marca}}</strong> {{b.modelo}}
+                                    {% if b.hostname %} — <code>{{b.hostname}}</code>{% endif %}
+                                    {% if b.patrimonio %} · patr. {{b.patrimonio}}{% endif %}
+                                    {% if b.status %} <span class="badge bg-secondary">{{b.status}}</span>{% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center text-muted py-5">
+                    <i class="bi bi-diagram-3 fs-1 d-block mb-2 opacity-50"></i>
+                    Nenhum vínculo encontrado.
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-trophy me-2"></i>Top Funcionários</div>
+            <div class="card-body">
+                {% set top10 = teia[:10] %}
+                {% set maxv = (top10|map(attribute='total')|max) if top10 else 1 %}
+                {% for t in top10 %}
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span class="text-truncate" style="max-width:75%">{{t.nome}}</span>
+                        <strong>{{t.total}}</strong>
+                    </div>
+                    <div class="progress" style="height:5px">
+                        <div class="progress-bar bg-primary" style="width:{{(t.total/maxv*100)|round(1)}}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="bi bi-clipboard-data me-2"></i>Resumo</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2 small">
+                    <span class="text-muted">Funcionários com bens</span>
+                    <strong>{{teia|length}}</strong>
+                </div>
+                <div class="d-flex justify-content-between small">
+                    <span class="text-muted">Total vinculado</span>
+                    <strong>{{ teia|map(attribute='total')|sum }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filtrar(){
+    const q = document.getElementById('busca').value.toUpperCase();
+    document.querySelectorAll('.teia-node').forEach(n => {
+        n.style.display = n.dataset.nome.includes(q) ? '' : 'none';
+    });
+}
+const foco = new URLSearchParams(location.search).get('foco');
+if (foco) {
+    document.getElementById('busca').value = foco;
+    filtrar();
+}
+</script>
+{% endblock %}

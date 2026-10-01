@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Registrar Movimentação{% endblock %}
+{% block content %}
+
+<div class="row g-3">
+    <div class="col-lg-8">
+
+        <div class="card mb-3">
+            <div class="card-header" style="border-left:3px solid #d97706">
+                <span class="badge bg-warning text-white me-2">1</span> De quem sairão os bens?
+            </div>
+            <div class="card-body">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-8">
+                        <label class="form-label">Responsável de origem</label>
+                        <input id="origem" class="form-control form-control-lg"
+                               list="listaFuncs" placeholder="Digite ou escolha o nome..." autocomplete="off">
+                        <datalist id="listaFuncs">
+                            {% for r in por_resp.keys() %}<option value="{{r}}">{% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="col-md-4">
+                        <span id="origem_info" class="badge bg-secondary w-100 py-3">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3" id="card_bens" style="display:none">
+            <div class="card-header" style="border-left:3px solid #2563eb">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><span class="badge bg-primary me-2">2</span> Selecione os bens</span>
+                    <div>
+                        <button class="btn btn-outline-primary btn-sm" onclick="marcarTodos()">Marcar todos</button>
+                        <button class="btn btn-outline-primary btn-sm" onclick="desmarcarTodos()">Limpar</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="lista_bens" class="list-group list-group-flush" style="max-height:420px; overflow-y:auto"></div>
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <span class="text-muted small">Bens selecionados</span>
+                <span class="badge bg-primary fs-6" id="cont_sel">0</span>
+            </div>
+        </div>
+
+        <div class="card mb-3" id="card_dest" style="display:none">
+            <div class="card-header" style="border-left:3px solid #059669">
+                <span class="badge bg-success me-2">3</span> Para quem vão?
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Novo responsável (destino)</label>
+                        <input id="destino" class="form-control" list="listaFuncsAll"
+                               placeholder="Digite ou escolha..." autocomplete="off">
+                        <datalist id="listaFuncsAll">
+                            {% for f in funcionarios %}<option value="{{f.nome}}">{% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Novo departamento (opcional)</label>
+                        <input id="dep_dest" class="form-control" list="listaDeps"
+                               placeholder="Se vazio, mantém o atual" autocomplete="off">
+                        <datalist id="listaDeps">
+                            {% for d in departamentos %}<option value="{{d}}">{% endfor %}
+                        </datalist>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Observação (opcional)</label>
+                        <textarea id="obs" class="form-control" rows="2"
+                                  placeholder="Ex: troca de máquina, devolução, etc."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-end">
+                <button class="btn btn-success btn-lg px-5" onclick="registrar()">
+                    <i class="bi bi-check2-circle me-2"></i> Registrar Movimentação
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-info-circle me-2"></i>Como funciona</div>
+            <div class="card-body small">
+                <ol class="ps-3 mb-3">
+                    <li>Escolha o <strong>responsável atual</strong> dos bens.</li>
+                    <li>Marque <strong>um ou vários bens</strong> da lista.</li>
+                    <li>Escolha o <strong>novo responsável</strong> (destino).</li>
+                    <li>Clique em <strong>Registrar Movimentação</strong>.</li>
+                </ol>
+                <div class="text-muted border-top pt-3">
+                    <div class="mb-1"><i class="bi bi-check2 text-success me-1"></i> Atualiza o bem na base</div>
+                    <div class="mb-1"><i class="bi bi-check2 text-success me-1"></i> Salva em <code>movimentacoes.csv</code></div>
+                    <div><i class="bi bi-check2 text-success me-1"></i> Aparece em <strong>Movimentações</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-bar-chart me-2"></i>Resumo Rápido</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2 small">
+                    <span class="text-muted">Total de bens</span><strong>{{bens|length}}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2 small">
+                    <span class="text-muted">Funcionários</span><strong>{{funcionarios|length}}</strong>
+                </div>
+                <div class="d-flex justify-content-between small">
+                    <span class="text-muted">Departamentos</span><strong>{{departamentos|length}}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const BENS_POR_RESP = {{ por_resp|tojson }};
+const TODOS_BENS = {{ bens|tojson }};
+
+let selecionados = new Set();
+
+const inputOrigem = document.getElementById('origem');
+const inputDestino = document.getElementById('destino');
+
+inputOrigem.addEventListener('input', () => {
+    const nome = inputOrigem.value.trim().toUpperCase();
+    let encontrado = null;
+    for (const k of Object.keys(BENS_POR_RESP)) {
+        if (k.toUpperCase() === nome) { encontrado = BENS_POR_RESP[k]; break; }
+    }
+    if (encontrado) {
+        document.getElementById('origem_info').innerText = `${encontrado.length} bem(ns)`;
+        document.getElementById('origem_info').className = 'badge bg-warning text-white w-100 py-3';
+        renderBens(encontrado);
+        document.getElementById('card_bens').style.display = '';
+        document.getElementById('card_dest').style.display = '';
+    } else {
+        document.getElementById('origem_info').innerText = '—';
+        document.getElementById('origem_info').className = 'badge bg-secondary w-100 py-3';
+        document.getElementById('card_bens').style.display = 'none';
+        document.getElementById('card_dest').style.display = 'none';
+    }
+});
+
+function renderBens(lista) {
+    selecionados.clear(); atualizarContador();
+    const cont = document.getElementById('lista_bens');
+    if (!lista.length) {
+        cont.innerHTML = '<div class="p-3 text-muted text-center">Este responsável não possui bens.</div>';
+        return;
+    }
+    cont.innerHTML = lista.map(b => `
+        <label class="list-group-item d-flex align-items-center gap-3 py-3 border-bottom">
+            <input type="checkbox" class="form-check-input mt-0" value="${b.id}"
+                   onchange="toggleSel(${b.id}, this.checked)">
+            <div class="flex-grow-1">
+                <div><strong>${b.marca||''}</strong> ${b.modelo||''}
+                    <span class="badge bg-info-subtle ms-1">${b.categoria||''}</span>
+                </div>
+                <div class="small text-muted">
+                    ${b.hostname ? '<code>'+b.hostname+'</code>' : ''}
+                    ${b.patrimonio ? ' · patr. '+b.patrimonio : ''}
+                    ${b.status ? ' · '+b.status : ''}
+                </div>
+            </div>
+        </label>
+    `).join('');
+}
+
+function toggleSel(id, marcado) {
+    if (marcado) selecionados.add(id); else selecionados.delete(id);
+    atualizarContador();
+}
+function marcarTodos() {
+    document.querySelectorAll('#lista_bens input[type=checkbox]').forEach(c => {
+        c.checked = true; selecionados.add(parseInt(c.value));
+    });
+    atualizarContador();
+}
+function desmarcarTodos() {
+    document.querySelectorAll('#lista_bens input[type=checkbox]').forEach(c => {
+        c.checked = false; selecionados.delete(parseInt(c.value));
+    });
+    atualizarContador();
+}
+function atualizarContador() {
+    document.getElementById('cont_sel').innerText = selecionados.size;
+}
+
+async function registrar() {
+    const origem = inputOrigem.value.trim();
+    const destino = inputDestino.value.trim();
+    const dep = document.getElementById('dep_dest').value.trim();
+    const obs = document.getElementById('obs').value.trim();
+    if (!origem || !destino) return alert('Preencha origem e destino.');
+    if (!selecionados.size) return alert('Selecione ao menos 1 bem.');
+
+    const dados = {
+        origem, destino, departamento_destino: dep, obs,
+        ids: Array.from(selecionados)
+    };
+    const r = await fetch('/movimentar/registrar', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(dados)
+    });
+    const j = await r.json();
+    if (j.ok) {
+        alert('✅ ' + j.msg);
+        window.location.href = '/movimentacoes';
+    } else {
+        alert('❌ ' + j.msg);
+    }
+}
+</script>
+{% endblock %}

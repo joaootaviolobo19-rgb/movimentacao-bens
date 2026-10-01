@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, json, csv, io, re, glob, shutil
+import os, json, csv, io, re
 from datetime import datetime, timedelta
 from collections import defaultdict
 from difflib import SequenceMatcher
@@ -20,181 +20,44 @@ ARQ_FUNC = os.path.join(DADOS, "funcionarios.json")
 ARQ_DEP  = os.path.join(DADOS, "departamentos.json")
 ARQ_MOV  = os.path.join(DADOS, "movimentacoes.csv")
 
-# ==================================================================
-# CSV_STORE INTEGRADO
-# ==================================================================
-DELIMITER = ";"
-BACKUP_DIR = os.path.join(BASE_DIR, "_backup_csv")
-os.makedirs(BACKUP_DIR, exist_ok=True)
-
-COLS = [
-    ("Categoria",           "categoria"),
-    ("Modelo",              "modelo"),
-    ("Hostname",            "hostname"),
-    ("Patrimônio",          "patrimonio"),
-    ("Departamento",        "departamento"),
-    ("Responsável",         "responsavel"),
-    ("Marca",               "marca"),
-    ("Serial",              "serial"),
-    ("Ramal",               "ramal"),
-    ("IP",                  "ip"),
-    ("Observação",          "observacao"),
-    ("CPU",                 "cpu"),
-    ("Disco",               "disco"),
-    ("RAM",                 "ram"),
-    ("ISO",                 "iso"),
-    ("Status",              "status"),
-    ("Chave de auditoria",  "_auditoria"),
-    ("VERIFICAÇÃO",         "_verificacao"),
-    ("Departamento",        "_depto_extra"),
-]
-
-
-def _achar_csv():
-    for p in [os.path.join(BASE_DIR, "Levantamento*.csv"),
-              os.path.join(BASE_DIR, "..", "Levantamento*.csv")]:
-        achados = sorted(glob.glob(p))
-        if achados:
-            return os.path.abspath(achados[0])
-    return None
-
-
-CSV_PATH = _achar_csv()
-
-
-def caminho_csv():
-    return CSV_PATH
-
-
-def _detectar_encoding(path):
-    if not os.path.exists(path):
-        return "utf-8"
-    with open(path, "rb") as f:
-        raw = f.read(4)
-    if raw.startswith(b"\xef\xbb\xbf"):
-        return "utf-8-sig"
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            f.read(4096)
-        return "utf-8"
-    except UnicodeDecodeError:
-        return "cp1252"
-
-
-def _backup_csv():
-    if not CSV_PATH or not os.path.exists(CSV_PATH):
-        return
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    nome = os.path.basename(CSV_PATH)
-    try:
-        shutil.copy2(CSV_PATH, os.path.join(BACKUP_DIR, ts + "__" + nome))
-    except Exception as e:
-        print("[csv] Aviso backup:", e)
-
-
-def _csv_carregar():
-    global CSV_PATH
-    if not CSV_PATH:
-        CSV_PATH = _achar_csv()
-    if not CSV_PATH or not os.path.exists(CSV_PATH):
-        return []
-    enc = _detectar_encoding(CSV_PATH)
-    bens = []
-    with open(CSV_PATH, "r", encoding=enc, newline="") as f:
-        reader = csv.reader(f, delimiter=DELIMITER)
-        try:
-            next(reader)
-        except StopIteration:
-            return []
-        for raw in reader:
-            if not any((c or "").strip() for c in raw):
-                continue
-            raw = list(raw) + [""] * (len(COLS) - len(raw))
-            raw = raw[:len(COLS)]
-            item = {}
-            for i, (_, campo) in enumerate(COLS):
-                item[campo] = (raw[i] or "").strip()
-            bens.append(item)
-    for i, b in enumerate(bens, start=1):
-        b["id"] = i
-    return bens
-
-
-def _csv_salvar(bens):
-    if not CSV_PATH:
-        raise RuntimeError("CSV do Levantamento não encontrado.")
-    enc = _detectar_encoding(CSV_PATH)
-    _backup_csv()
-    with open(CSV_PATH, "w", encoding=enc, newline="") as f:
-        w = csv.writer(f, delimiter=DELIMITER)
-        w.writerow([c[0] for c in COLS])
-        for b in bens:
-            w.writerow([b.get(campo, "") or "" for _, campo in COLS])
-
-
-# ==================================================================
-# Helpers gerais
-# ==================================================================
 def _load(path, default):
-    if not os.path.exists(path):
-        return default
+    if not os.path.exists(path): return default
     with open(path, "r", encoding="utf-8-sig") as f:
-        try:
-            return json.load(f)
-        except Exception:
-            return default
-
+        try: return json.load(f)
+        except Exception: return default
 
 def _save(path, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-
-def load_bens():
-    return _csv_carregar()
-
-
-def save_bens(lista):
-    _csv_salvar(lista)
-    try:
-        _save(ARQ_BENS, lista)
-    except Exception:
-        pass
-
-
+def load_bens():   return _load(ARQ_BENS, [])
 def load_funcs():  return _load(ARQ_FUNC, [])
 def load_deps():   return _load(ARQ_DEP, [])
+def save_bens(d):  _save(ARQ_BENS, d)
 def save_funcs(d): _save(ARQ_FUNC, d)
-
 
 def next_id(lista):
     return (max([x.get("id", 0) for x in lista]) + 1) if lista else 1
 
-
 def normalizar(s):
     return re.sub(r"\s+", " ", (s or "").strip())
 
-
-CABECALHO_MOV = ["data", "bem_id", "categoria", "patrimonio", "hostname",
-                 "de_responsavel", "para_responsavel", "de_departamento",
-                 "para_departamento", "obs"]
-
+CABECALHO_MOV = ["data","bem_id","categoria","patrimonio","hostname",
+                 "de_responsavel","para_responsavel","de_departamento",
+                 "para_departamento","obs"]
 
 def registrar_movimento(b, de_resp, de_dep, para_resp, para_dep, obs):
     existe = os.path.exists(ARQ_MOV)
     with open(ARQ_MOV, "a", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f)
-        if not existe:
-            w.writerow(CABECALHO_MOV)
+        if not existe: w.writerow(CABECALHO_MOV)
         w.writerow([datetime.now().strftime("%Y-%m-%d %H:%M"),
                     b.get("id"), b.get("categoria"), b.get("patrimonio"),
                     b.get("hostname"), de_resp, para_resp,
                     de_dep, para_dep, obs])
 
-
 def agrupar_por_funcionario():
-    bens = load_bens()
-    funcs = load_funcs()
+    bens = load_bens(); funcs = load_funcs()
     mapa = defaultdict(list)
     for b in bens:
         resp = normalizar(b.get("responsavel") or "") or "SEM RESPONSAVEL"
@@ -204,20 +67,17 @@ def agrupar_por_funcionario():
     for nome, itens in mapa.items():
         meta = info.get(nome.upper(), {})
         cats = defaultdict(int)
-        for it in itens:
-            cats[it.get("categoria") or "Outros"] += 1
-        teia.append({"nome": nome, "cargo": meta.get("cargo", ""),
-                     "setor": meta.get("setor", ""), "total": len(itens),
-                     "por_categoria": dict(sorted(cats.items(), key=lambda x: -x[1])),
+        for it in itens: cats[it.get("categoria") or "Outros"] += 1
+        teia.append({"nome": nome, "cargo": meta.get("cargo",""),
+                     "setor": meta.get("setor",""), "total": len(itens),
+                     "por_categoria": dict(sorted(cats.items(), key=lambda x:-x[1])),
                      "bens": itens})
     teia.sort(key=lambda x: (-x["total"], x["nome"]))
     return teia
 
-
 def _dados_graficos():
     bens = load_bens()
-    por_cat = defaultdict(int)
-    por_dep = defaultdict(int)
+    por_cat = defaultdict(int); por_dep = defaultdict(int)
     for b in bens:
         por_cat[b.get("categoria") or "Outros"] += 1
         por_dep[b.get("departamento") or "Sem depto"] += 1
@@ -228,8 +88,7 @@ def _dados_graficos():
                 try:
                     d = datetime.strptime(row["data"], "%Y-%m-%d %H:%M")
                     mov_mes[d.strftime("%Y-%m")] += 1
-                except Exception:
-                    pass
+                except Exception: pass
     hoje = datetime.now()
     eixo = []
     for i in range(11, -1, -1):
@@ -240,29 +99,24 @@ def _dados_graficos():
         eixo.append(f"{ano:04d}-{mes:02d}")
     mov_series = [mov_mes.get(m, 0) for m in eixo]
     return {
-        "cat_labels": [k for k, _ in sorted(por_cat.items(), key=lambda x: -x[1])[:10]],
-        "cat_values": [v for _, v in sorted(por_cat.items(), key=lambda x: -x[1])[:10]],
-        "dep_labels": [k for k, _ in sorted(por_dep.items(), key=lambda x: -x[1])[:10]],
-        "dep_values": [v for _, v in sorted(por_dep.items(), key=lambda x: -x[1])[:10]],
+        "cat_labels": [k for k,_ in sorted(por_cat.items(), key=lambda x:-x[1])[:10]],
+        "cat_values": [v for _,v in sorted(por_cat.items(), key=lambda x:-x[1])[:10]],
+        "dep_labels": [k for k,_ in sorted(por_dep.items(), key=lambda x:-x[1])[:10]],
+        "dep_values": [v for _,v in sorted(por_dep.items(), key=lambda x:-x[1])[:10]],
         "mov_labels": eixo,
         "mov_values": mov_series,
     }
 
-
 # ============ DASHBOARD ============
 @app.route("/")
 def dashboard():
-    bens = load_bens()
-    funcs = load_funcs()
-    deps = load_deps()
+    bens = load_bens(); funcs = load_funcs(); deps = load_deps()
     por_status = defaultdict(int)
     com_resp = sem_resp = 0
     for b in bens:
         por_status[b.get("status") or "Nao informado"] += 1
-        if normalizar(b.get("responsavel")):
-            com_resp += 1
-        else:
-            sem_resp += 1
+        if normalizar(b.get("responsavel")): com_resp += 1
+        else: sem_resp += 1
     tot_mov = 0
     if os.path.exists(ARQ_MOV):
         with open(ARQ_MOV, encoding="utf-8") as f:
@@ -274,194 +128,114 @@ def dashboard():
         total_mov=tot_mov, por_status=dict(por_status),
         graf=graf)
 
-
 # ============ BENS ============
 @app.route("/bens")
 def bens_view():
-    bens = load_bens()
-    todos = load_bens()
+    bens = load_bens(); todos = load_bens()
     q = (request.args.get("q") or "").lower()
     cat = request.args.get("cat") or ""
     dep = request.args.get("dep") or ""
     resp = request.args.get("resp") or ""
-    if q:
-        bens = [b for b in bens if q in json.dumps(b, ensure_ascii=False).lower()]
-    if cat:
-        bens = [b for b in bens if (b.get("categoria") or "") == cat]
-    if dep:
-        bens = [b for b in bens if (b.get("departamento") or "") == dep]
-    if resp:
-        bens = [b for b in bens if normalizar(b.get("responsavel")) == resp]
+    if q: bens = [b for b in bens if q in json.dumps(b, ensure_ascii=False).lower()]
+    if cat: bens = [b for b in bens if (b.get("categoria") or "") == cat]
+    if dep: bens = [b for b in bens if (b.get("departamento") or "") == dep]
+    if resp: bens = [b for b in bens if normalizar(b.get("responsavel")) == resp]
     return render_template("bens.html", bens=bens,
         categorias=sorted({b.get("categoria") for b in todos if b.get("categoria")}),
         departamentos=sorted({b.get("departamento") for b in todos if b.get("departamento")}),
         responsaveis=sorted({normalizar(b.get("responsavel")) for b in todos if b.get("responsavel")}),
-        filtros={"q": q, "cat": cat, "dep": dep, "resp": resp})
-
+        filtros={"q":q,"cat":cat,"dep":dep,"resp":resp})
 
 @app.route("/bens/salvar", methods=["POST"])
 def bens_salvar():
     d = request.json or {}
     bens = load_bens()
-    campos = ["categoria", "modelo", "hostname", "patrimonio", "departamento",
-              "responsavel", "marca", "serial", "ramal", "ip", "observacao",
-              "cpu", "disco", "ram", "iso", "status"]
+    campos = ["categoria","modelo","hostname","patrimonio","departamento",
+              "responsavel","marca","serial","ramal","ip","observacao",
+              "cpu","disco","ram","iso","status"]
     item = {k: normalizar(d.get(k)) for k in campos}
     bid = d.get("id")
     if bid:
-        for i, b in enumerate(bens):
+        for i,b in enumerate(bens):
             if b.get("id") == bid:
                 bens[i] = {**b, **item, "atualizado_em": datetime.now().isoformat()}
                 break
         msg = "Bem atualizado!"
     else:
-        item["id"] = next_id(bens)
-        item["criado_em"] = datetime.now().isoformat()
-        bens.append(item)
-        msg = "Bem cadastrado!"
+        item["id"] = next_id(bens); item["criado_em"] = datetime.now().isoformat()
+        bens.append(item); msg = "Bem cadastrado!"
     save_bens(bens)
-    return jsonify({"ok": True, "msg": msg})
-
+    return jsonify({"ok":True,"msg":msg})
 
 @app.route("/bens/excluir/<int:bid>", methods=["POST"])
 def bens_excluir(bid):
     save_bens([b for b in load_bens() if b.get("id") != bid])
-    return jsonify({"ok": True})
-
+    return jsonify({"ok":True})
 
 @app.route("/bens/exportar.csv")
 def bens_exportar():
-    if not CSV_PATH or not os.path.exists(CSV_PATH):
-        return "CSV não encontrado", 404
-    return send_file(CSV_PATH, mimetype="text/csv", as_attachment=True,
-                     download_name="Levantamento_Geral1_controle.csv")
-
-
-# ============ PLANILHA (Excel-like) ============
-@app.route("/planilha")
-def planilha_view():
     bens = load_bens()
-    cats = sorted({(b.get("categoria") or "").strip() for b in bens if (b.get("categoria") or "").strip()})
-    deps = sorted({(b.get("departamento") or "").strip() for b in bens if (b.get("departamento") or "").strip()})
-    return render_template("planilha.html", bens=bens, cats=cats, deps=deps, total=len(bens))
-
-
-@app.route("/api/bens/celula", methods=["POST"])
-def api_bens_celula():
-    """Salva UMA célula editada na planilha."""
-    d = request.get_json(force=True, silent=True) or {}
-    bid = d.get("id")
-    campo = (d.get("campo") or "").strip()
-    valor = (d.get("valor") or "").strip()
-    if bid is None or not campo:
-        return jsonify({"ok": False, "msg": "Faltando id/campo"})
-
-    CAMPOS_PERMITIDOS = {
-        "categoria", "modelo", "hostname", "patrimonio", "departamento",
-        "responsavel", "marca", "serial", "ramal", "ip", "observacao",
-        "cpu", "disco", "ram", "iso", "status",
-    }
-    if campo not in CAMPOS_PERMITIDOS:
-        return jsonify({"ok": False, "msg": "Campo nao editavel"})
-
-    bens = load_bens()
-    achou = False
-    for b in bens:
-        if b.get("id") == bid:
-            b[campo] = valor
-            b["atualizado_em"] = datetime.now().isoformat()
-            achou = True
-            break
-    if not achou:
-        return jsonify({"ok": False, "msg": "Bem nao encontrado"})
-    save_bens(bens)
-    return jsonify({"ok": True, "valor": valor})
-
-
-@app.route("/api/bens/planilha_lote", methods=["POST"])
-def api_bens_planilha_lote():
-    """Salva várias edições de uma vez."""
-    d = request.get_json(force=True, silent=True) or {}
-    edicoes = d.get("edicoes") or []
-    if not edicoes:
-        return jsonify({"ok": True, "aplicadas": 0})
-    bens = load_bens()
-    por_id = {b.get("id"): b for b in bens}
-    aplicadas = 0
-    for e in edicoes:
-        b = por_id.get(e.get("id"))
-        if not b:
-            continue
-        b[e.get("campo")] = (e.get("valor") or "").strip()
-        b["atualizado_em"] = datetime.now().isoformat()
-        aplicadas += 1
-    save_bens(bens)
-    return jsonify({"ok": True, "aplicadas": aplicadas})
-
+    if not bens: return "Sem dados", 404
+    campos = ["id","categoria","modelo","marca","hostname","patrimonio",
+              "departamento","responsavel","serial","ramal","ip",
+              "cpu","disco","ram","iso","status","observacao"]
+    sio = io.StringIO()
+    w = csv.DictWriter(sio, fieldnames=campos, extrasaction="ignore")
+    w.writeheader()
+    for b in bens: w.writerow(b)
+    mem = io.BytesIO(sio.getvalue().encode("utf-8-sig"))
+    return send_file(mem, mimetype="text/csv", as_attachment=True,
+                     download_name="bens.csv")
 
 # ============ FUNCIONARIOS ============
 @app.route("/funcionarios")
 def funcionarios_view():
-    funcs = load_funcs()
-    bens = load_bens()
+    funcs = load_funcs(); bens = load_bens()
     cont = defaultdict(int)
     for b in bens:
         r = normalizar(b.get("responsavel"))
-        if r:
-            cont[r.upper()] += 1
+        if r: cont[r.upper()] += 1
     for f in funcs:
         f["total_bens"] = cont.get(normalizar(f["nome"]).upper(), 0)
     return render_template("funcionarios.html", funcionarios=funcs)
-
 
 @app.route("/funcionarios/salvar", methods=["POST"])
 def funcionarios_salvar():
     d = request.json or {}
     funcs = load_funcs()
-    campos = ["nome", "cargo", "setor"]
+    campos = ["nome","cargo","setor"]
     item = {k: normalizar(d.get(k)) for k in campos}
-    if not item["nome"]:
-        return jsonify({"ok": False, "msg": "Nome obrigatorio"})
+    if not item["nome"]: return jsonify({"ok":False,"msg":"Nome obrigatorio"})
     idx = d.get("idx")
     if idx is not None and 0 <= idx < len(funcs):
-        funcs[idx] = {**funcs[idx], **item}
-        msg = "Atualizado!"
+        funcs[idx] = {**funcs[idx], **item}; msg = "Atualizado!"
     else:
-        funcs.append(item)
-        msg = "Cadastrado!"
+        funcs.append(item); msg = "Cadastrado!"
     save_funcs(funcs)
-    return jsonify({"ok": True, "msg": msg})
-
+    return jsonify({"ok":True,"msg":msg})
 
 @app.route("/funcionarios/excluir/<int:idx>", methods=["POST"])
 def funcionarios_excluir(idx):
     funcs = load_funcs()
-    if 0 <= idx < len(funcs):
-        funcs.pop(idx)
-        save_funcs(funcs)
-    return jsonify({"ok": True})
-
+    if 0 <= idx < len(funcs): funcs.pop(idx); save_funcs(funcs)
+    return jsonify({"ok":True})
 
 # ============ TEIA ============
 @app.route("/teia")
 def teia_view():
     return render_template("teia.html", teia=agrupar_por_funcionario())
 
-
 # ============ MOVIMENTAR ============
 @app.route("/movimentar")
 def movimentar_view():
-    bens = load_bens()
-    funcs = load_funcs()
-    deps = load_deps()
+    bens = load_bens(); funcs = load_funcs(); deps = load_deps()
     por_resp = defaultdict(list)
     for b in bens:
         r = normalizar(b.get("responsavel")) or "SEM RESPONSAVEL"
         por_resp[r].append(b)
     return render_template("movimentar.html",
                            bens=bens, funcionarios=funcs, departamentos=deps,
-                           por_resp={k: v for k, v in por_resp.items()})
-
+                           por_resp={k: v for k,v in por_resp.items()})
 
 @app.route("/movimentar/registrar", methods=["POST"])
 def movimentar_registrar():
@@ -479,15 +253,13 @@ def movimentar_registrar():
         if b.get("id") in ids:
             ar, ad = b.get("responsavel"), b.get("departamento")
             b["responsavel"] = destino
-            if dep_dest:
-                b["departamento"] = dep_dest
+            if dep_dest: b["departamento"] = dep_dest
             b["atualizado_em"] = datetime.now().isoformat()
             registrar_movimento(b, ar, ad, b["responsavel"], b["departamento"], obs)
             registrados += 1
     save_bens(bens)
     return jsonify({"ok": True, "total": registrados,
                     "msg": f"{registrados} movimentacao(oes) registrada(s)!"})
-
 
 # ============ MOVIMENTACOES ============
 @app.route("/movimentacoes")
@@ -503,19 +275,15 @@ def movimentacoes_view():
                            movimentacoes=list(reversed(linhas)),
                            total=len(linhas), filtros={"q": q})
 
-
 @app.route("/movimentacoes/exportar.csv")
 def movimentacoes_exportar():
-    if not os.path.exists(ARQ_MOV):
-        return "Sem dados", 404
+    if not os.path.exists(ARQ_MOV): return "Sem dados", 404
     return send_file(ARQ_MOV, mimetype="text/csv", as_attachment=True,
                      download_name="movimentacoes.csv")
-
 
 # ============ CONFIGURACOES / EMAIL ============
 def _split_emails(s):
     return [e.strip() for e in re.split(r"[,;\n]+", s or "") if e.strip()]
-
 
 @app.route("/configuracoes")
 def configuracoes_view():
@@ -529,7 +297,6 @@ def configuracoes_view():
                            cfg=cfg,
                            proximo=prox.strftime("%d/%m/%Y %H:%M") if prox else "—",
                            log=list(reversed(log)))
-
 
 @app.route("/configuracoes/salvar", methods=["POST"])
 def configuracoes_salvar():
@@ -562,7 +329,6 @@ def configuracoes_salvar():
     mailer.salvar_config(cfg)
     return jsonify({"ok": True, "msg": "Configuracoes salvas!"})
 
-
 @app.route("/configuracoes/testar", methods=["POST"])
 def configuracoes_testar():
     d = request.get_json(force=True, silent=True) or {}
@@ -578,19 +344,16 @@ def configuracoes_testar():
     ok, msg = mailer.enviar_email(cfg)
     return jsonify({"ok": ok, "msg": msg})
 
-
 @app.route("/configuracoes/enviar_agora", methods=["POST"])
 def configuracoes_enviar_agora():
     cfg = mailer.carregar_config()
     ok, msg = mailer.enviar_email(cfg)
     return jsonify({"ok": ok, "msg": msg})
 
-
 @app.route("/configuracoes/preview")
 def configuracoes_preview():
     cfg = mailer.carregar_config()
     return mailer.montar_email(cfg)
-
 
 @app.route("/configuracoes/diagnostico")
 def configuracoes_diagnostico():
@@ -607,9 +370,7 @@ def configuracoes_diagnostico():
         "destinatarios": cfg.get("destinatarios"),
         "remetente_nome": cfg.get("remetente_nome"),
         "assunto": cfg.get("assunto"),
-        "csv_fonte": CSV_PATH,
     })
-
 
 # ============ QR CODE / ETIQUETAS ============
 import socket as _socket
@@ -619,8 +380,8 @@ try:
 except ImportError:
     TEM_SEGNO = False
 
-
 def get_lan_ip():
+    """Descobre o IP da maquina na rede local."""
     s = _socket.socket(_socket.AF_INET, _socket.SOCK_DGRAM)
     try:
         s.connect(("8.8.8.8", 80))
@@ -631,12 +392,12 @@ def get_lan_ip():
         s.close()
     return ip
 
-
 def base_url_publica():
+    """URL base dos QR codes (ex: http://10.28.67.22:5000)."""
     return "http://%s:5000" % get_lan_ip()
 
-
 def encontrar_bem(ident):
+    """Acha bem por ID, patrimonio ou hostname."""
     bens = load_bens()
     ident_s = str(ident).strip()
     if ident_s.isdigit():
@@ -650,7 +411,6 @@ def encontrar_bem(ident):
         if (b.get("hostname") or "").strip().upper() == ident_s.upper():
             return b
     return None
-
 
 @app.route("/etiquetas")
 def etiquetas_view():
@@ -669,7 +429,6 @@ def etiquetas_view():
         base_url=base_url_publica(),
         tem_segno=TEM_SEGNO)
 
-
 @app.route("/etiquetas/imprimir", methods=["POST"])
 def etiquetas_imprimir():
     d = request.json or {}
@@ -679,7 +438,6 @@ def etiquetas_imprimir():
     return render_template("etiquetas_imprimir.html",
         bens=selecionados,
         base_url=base_url_publica())
-
 
 @app.route("/b/<ident>")
 def bem_detalhe_publico(ident):
@@ -695,7 +453,6 @@ def bem_detalhe_publico(ident):
     historico = list(reversed(historico))
     return render_template("bem_detalhe.html", bem=bem, historico=historico)
 
-
 @app.route("/b/<ident>/qrcode.png")
 def bem_qrcode(ident):
     if not TEM_SEGNO:
@@ -710,15 +467,14 @@ def bem_qrcode(ident):
     buf.seek(0)
     return send_file(buf, mimetype="image/png")
 
-
 # ============ ESCANEAR ETIQUETA (OCR) + BUSCA ============
 @app.route("/escanear")
 def escanear_view():
     return render_template("escanear.html")
 
-
 @app.route("/api/sugerir")
 def api_sugerir():
+    """Retorna bens que casam com o texto (hostname, patrimonio, id, modelo)."""
     q = (request.args.get("q") or "").strip().upper()
     if not q or len(q) < 2:
         return jsonify({"bens": []})
@@ -740,42 +496,55 @@ def api_sugerir():
                 "departamento": b.get("departamento") or "",
                 "status": b.get("status") or "",
             })
+    # Prioriza quem começa com q, depois quem contém
     def _rank(x):
         h = x["hostname"].upper()
         p = x["patrimonio"].upper()
-        if h.startswith(q) or p.startswith(q):
-            return (0, h)
+        if h.startswith(q) or p.startswith(q): return (0, h)
         return (1, h)
     out.sort(key=_rank)
     return jsonify({"bens": out[:15]})
 
-
 @app.route("/api/buscar_por_tag", methods=["POST"])
 def api_buscar_tag():
+    """
+    Recebe texto lido pelo OCR e tenta casar com um bem.
+    Usa SequenceMatcher com exigência de 90% de similaridade para
+    evitar falsos positivos (ex: 7RH31H4 vs 7RH31H5).
+    """
     d = request.get_json(force=True, silent=True) or {}
     texto = (d.get("texto") or "").upper()
     if not texto:
         return jsonify({"ok": False, "msg": "Texto vazio"})
+
+    # Extrai candidatos: sequências alfanuméricas de 3 a 16 chars (com hífen)
     candidatos_raw = re.findall(r"[A-Z0-9][A-Z0-9\-]{2,15}", texto)
     vistos = set()
     candidatos = []
     for c in candidatos_raw:
+        # Ignora palavras comuns do OCR
         if c in ("THE", "AND", "FOR", "COM", "WWW"):
             continue
         if c not in vistos:
             vistos.add(c)
             candidatos.append(c)
+
     bens = load_bens()
     achados = []
+
     for b in bens:
         h = (b.get("hostname") or "").upper().strip()
         p = (b.get("patrimonio") or "").upper().strip()
+
+        # 1) Match exato — prioridade máxima
         if h and len(h) >= 3 and h in texto:
             achados.append((100, b))
             continue
         if p and len(p) >= 3 and p in texto:
             achados.append((95, b))
             continue
+
+        # 2) Match aproximado — só contra candidatos, exigindo 90%+
         melhor_ratio = 0
         for alvo in (h, p):
             if not alvo or len(alvo) < 4:
@@ -783,20 +552,32 @@ def api_buscar_tag():
             for cand in candidatos:
                 if len(cand) < 4:
                     continue
+                # Diferença de tamanho máx 1 caractere
                 if abs(len(cand) - len(alvo)) > 1:
                     continue
                 ratio = SequenceMatcher(None, cand, alvo).ratio()
                 if ratio > melhor_ratio:
                     melhor_ratio = ratio
+
         if melhor_ratio >= 0.90:
             achados.append((int(melhor_ratio * 70), b))
+
     if not achados:
-        return jsonify({"ok": False,
-                        "msg": "Não consegui identificar um bem.",
-                        "texto_lido": texto,
-                        "candidatos": candidatos[:8]})
+        return jsonify({
+            "ok": False,
+            "msg": "Não consegui identificar um bem. Aproxime mais a câmera ou digite o código manualmente.",
+            "texto_lido": texto,
+            "candidatos": candidatos[:8]
+        })
+
     achados.sort(key=lambda x: -x[0])
     melhor = achados[0][1]
+
+    # Log de debug no terminal
+    print(f"[OCR] Texto: {texto[:120]}")
+    print(f"[OCR] Candidatos: {candidatos[:8]}")
+    print(f"[OCR] Top 3: {[(score, (b.get('hostname') or b.get('patrimonio'))) for score, b in achados[:3]]}")
+
     return jsonify({
         "ok": True,
         "id": melhor.get("id"),
@@ -804,37 +585,8 @@ def api_buscar_tag():
         "redirect": "/b/%s" % (melhor.get("hostname") or melhor.get("patrimonio") or melhor.get("id"))
     })
 
-
-# ============ INFO ============
-@app.route("/api/csv_info")
-def api_csv_info():
-    if not CSV_PATH:
-        return jsonify({"ok": False, "msg": "CSV não encontrado."})
-    bens = load_bens()
-    try:
-        st = os.stat(CSV_PATH)
-        mod = datetime.fromtimestamp(st.st_mtime).strftime("%d/%m/%Y %H:%M:%S")
-        tam = round(st.st_size / 1024, 1)
-    except Exception:
-        mod, tam = "?", 0
-    return jsonify({
-        "ok": True,
-        "caminho": CSV_PATH,
-        "registros": len(bens),
-        "tamanho_kb": tam,
-        "modificado_em": mod,
-    })
-
-
 # ============ START ============
 if __name__ == "__main__":
-    print("\n" + "=" * 60)
-    if CSV_PATH:
-        print("  CSV fonte: " + CSV_PATH)
-    else:
-        print("  AVISO: CSV nao encontrado. Coloque Levantamento*.csv em:")
-        print("     " + BASE_DIR + "  ou  " + os.path.dirname(BASE_DIR))
-    print("=" * 60)
     mailer.iniciar_scheduler()
     print("\n  Servidor rodando em: http://localhost:5000\n")
     app.run(debug=False, host="0.0.0.0", port=5000)
