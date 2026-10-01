@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Movimentações{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="text-muted small">
+        <strong class="text-dark">{{total}}</strong> movimentação(ões) registrada(s)
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/movimentacoes/exportar.csv" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-download me-1"></i> Exportar CSV
+        </a>
+        <a href="/movimentar" class="btn btn-success btn-sm">
+            <i class="bi bi-plus-lg me-1"></i> Nova Movimentação
+        </a>
+    </div>
+</div>
+
+<form class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2">
+            <div class="col-md-10">
+                <input name="q" class="form-control form-control-sm"
+                       placeholder="Buscar por funcionário, patrimônio, hostname..."
+                       value="{{filtros.q}}">
+            </div>
+            <div class="col-md-2 d-grid">
+                <button class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i> Buscar</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Bem</th>
+                    <th>Patrimônio</th>
+                    <th>Hostname</th>
+                    <th>De → Para (responsável)</th>
+                    <th>De → Para (departamento)</th>
+                    <th>Obs</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for m in movimentacoes %}
+                <tr>
+                    <td class="small text-nowrap">{{m.data}}</td>
+                    <td><span class="badge bg-info-subtle">{{m.categoria}}</span></td>
+                    <td class="small">{{m.patrimonio or '—'}}</td>
+                    <td>{% if m.hostname %}<code>{{m.hostname}}</code>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                    <td class="small">
+                        <span class="text-muted">{{m.de_responsavel or '—'}}</span>
+                        <i class="bi bi-arrow-right text-primary mx-1"></i>
+                        <strong>{{m.para_responsavel or '—'}}</strong>
+                    </td>
+                    <td class="small">
+                        <span class="text-muted">{{m.de_departamento or '—'}}</span>
+                        <i class="bi bi-arrow-right text-primary mx-1"></i>
+                        <strong>{{m.para_departamento or '—'}}</strong>
+                    </td>
+                    <td class="small text-muted">{{m.obs}}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-5">
+                        <i class="bi bi-clock-history fs-1 d-block mb-2 opacity-50"></i>
+                        Nenhuma movimentação registrada ainda.<br>
+                        <a href="/movimentar" class="btn btn-success btn-sm mt-3">
+                            <i class="bi bi-plus-lg me-1"></i> Registrar a primeira
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

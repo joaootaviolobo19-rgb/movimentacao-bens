@@ -1,37 +1,1347 @@
 [
   {
+    "nome": "PATRICIA INES BALDASSO",
+    "cargo": "Advogado",
+    "setor": "Juridico"
+  },
+  {
+    "nome": "LEANDRO MARTINS BONES",
+    "cargo": "Almoxarife Técnico",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "MAURECI FERREIRA PIRES",
+    "cargo": "Almoxarife Técnico",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "PAULO DA SILVA BANDEIRA",
+    "cargo": "Almoxarife Técnico",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "AMANDA GOMES PACHECO SEVERO",
+    "cargo": "Analista Administrativo(a)",
+    "setor": "Administração"
+  },
+  {
+    "nome": "DAISY DA SILVA RUSSO",
+    "cargo": "Analista Administrativo(a)",
+    "setor": "Administração"
+  },
+  {
+    "nome": "SABRINA CARVALHO DA SILVA",
+    "cargo": "Analista Administrativo(a)",
+    "setor": "Administração"
+  },
+  {
+    "nome": "FABIANA ALMINHANA",
+    "cargo": "Analista Comercial",
+    "setor": "Comercial"
+  },
+  {
+    "nome": "ISABEL CRISTINA GIUSTI DA SILVA",
+    "cargo": "Analista Comercial",
+    "setor": "Comercial"
+  },
+  {
+    "nome": "SUSI SILVETE DA SILVA",
+    "cargo": "Analista Contábil",
+    "setor": "Contabilidade"
+  },
+  {
+    "nome": "RODRIGO CHAGAS FREITAS",
+    "cargo": "Analista de Criação",
+    "setor": "Marketing"
+  },
+  {
+    "nome": "FABIO ANDERSON RUBIRA GONZAGA",
+    "cargo": "Analista de Depto Pessoal",
+    "setor": "Recursos Humanos"
+  },
+  {
+    "nome": "THIAGO FERREIRA WIEDEMANN",
+    "cargo": "ANALISTA DE MARKETING",
+    "setor": "Marketing"
+  },
+  {
+    "nome": "GUILHERME DE SOUZA TEIXEIRA",
+    "cargo": "Analista Financeiro",
+    "setor": "Financeiro"
+  },
+  {
+    "nome": "JOAO OTAVIO DA SILVA LOBO",
+    "cargo": "Aprendiz",
+    "setor": "T.I"
+  },
+  {
+    "nome": "GIOVANA GOULARTE PADILHA",
+    "cargo": "Aprendiz",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "NATAN MOREIRA RAMIRO",
+    "cargo": "Aprendiz",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "PAOLA RODRIGUES DOS SANTOS",
+    "cargo": "Aprendiz",
+    "setor": "Marketing"
+  },
+  {
+    "nome": "MILLENA BEATRIZ PREUSS DE FREITAS",
+    "cargo": "Aprendiz",
+    "setor": "Recursos Humanos"
+  },
+  {
+    "nome": "ALCEU SAMUEL VETTORI",
+    "cargo": "Apresentador",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "LEO HENRIQUE SABALLA JUNIOR",
+    "cargo": "Apresentador",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "LEONARDO BARCELOS LARA",
+    "cargo": "Apresentador",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "VANESSA DE ALMEIDA PIRES",
+    "cargo": "Apresentadora",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "CHARLES RENAN FALERO FERREIRA",
+    "cargo": "Arquivista de Tapes",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "JOSENILDE DE LIMA GOMES",
+    "cargo": "Arquivista de Tapes",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "AMANDA DE OLIVEIRA MOREIRA",
+    "cargo": "Assistente Comercial",
+    "setor": "Comercial"
+  },
+  {
+    "nome": "MIRIAM SANTOS MARQUES",
+    "cargo": "Assistente de Diretoria",
+    "setor": "Diretoria"
+  },
+  {
+    "nome": "GABRIEL DE CAMPOS MACHADO",
+    "cargo": "Assistente de Marketing",
+    "setor": "Marketing"
+  },
+  {
+    "nome": "MARCO ANTONIO RODRIGUES BREGON",
+    "cargo": "Assistente de Produção",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "VAGNER MACHADO HANAUER",
+    "cargo": "Assistente de Produção",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "AMAILSON DA ROSA GAWLINSKI",
+    "cargo": "Assistente de Suporte",
+    "setor": "TI - Tecnologia da Informação"
+  },
+  {
+    "nome": "CRISTIANO SILVA D OLIVEIRA",
+    "cargo": "Auxiliar Camera U.P.E.",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "EDSON DA ROSA",
+    "cargo": "Auxiliar Camera U.P.E.",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "ELIZEU ROGERIO XAVIER DO CANTO",
+    "cargo": "Auxiliar Camera U.P.E.",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "JOAO BATISTA VERZANI LAUD",
+    "cargo": "Auxiliar Camera U.P.E.",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "JOSEMAR BRITTO DO CARMO",
+    "cargo": "Auxiliar Camera U.P.E.",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "LIDIO GILBERTO QUINTANA MARQUES",
+    "cargo": "Auxiliar Camera U.P.E.",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "MARIO JORGE VIANA DE LIMA",
+    "cargo": "Auxiliar Camera U.P.E.",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "VALDIR GOMES DE FREITAS JUNIOR",
+    "cargo": "Auxiliar Camera U.P.E.",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "WILSON BAPTISTA JUNIOR",
+    "cargo": "Auxiliar Camera U.P.E.",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "RODRIGO SCURSEL BETTIO",
+    "cargo": "Auxiliar Camera U.P.E.",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "FRANCIELLE MACHADO DA ROSA",
+    "cargo": "Auxiliar Comercial",
+    "setor": "Marketing"
+  },
+  {
+    "nome": "CRISTIANE GONÇALVES DA SILVA BORGES",
+    "cargo": "Auxiliar de Limpeza",
+    "setor": "Administração"
+  },
+  {
+    "nome": "ELIANE DA SILVA TATSCH",
+    "cargo": "Auxiliar de Limpeza",
+    "setor": "Administração"
+  },
+  {
+    "nome": "SUELEN AJARDO",
+    "cargo": "Auxiliar de Limpeza",
+    "setor": "Administração"
+  },
+  {
+    "nome": "ESTER OLIVEIRA VASSOLER",
+    "cargo": "Auxiliar de Mídias Sociais",
+    "setor": "Comercial"
+  },
+  {
+    "nome": "MARIA EDUARDA SILVEIRA DORNELLES",
+    "cargo": "Auxiliar de Opec",
+    "setor": "Operações Comerciais"
+  },
+  {
+    "nome": "CAROLINA MONTEIRO LOPES",
+    "cargo": "Auxiliar de Recursos Humanos",
+    "setor": "Recursos Humanos"
+  },
+  {
+    "nome": "NICOLLY VARGAS DE SOUZA",
+    "cargo": "Auxiliar Financeiro",
+    "setor": "Financeiro"
+  },
+  {
+    "nome": "GUILHERME STREVENSKI SOUZA",
+    "cargo": "Auxiliar Técnico",
+    "setor": "Técnica"
+  },
+  {
+    "nome": "CARLA ROSANE PACHECO SEABRA",
+    "cargo": "Chefe de Produção",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "JOSE HENRIQUE ROSITO FERRARO",
+    "cargo": "Chefe de Redação",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "ALEXSANDER PEIXOTO MACHADO",
+    "cargo": "Chefe de Reportagem",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "ANA LUISA PROCOPIO CORREA",
+    "cargo": "Chefe de Reportagem",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "VIVIAN LEAL DA SILVEIRA",
+    "cargo": "Chefe de Reportagem",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "ADILSON LUIS ROSA CORREA",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "DIEGO DA CRUZ VIEIRA",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "DIEGO FRANTZ MEDEIROS",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "FLAVIO LUIS DOS SANTOS DA SILVA",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "FRANCISCO DOS ANJOS RODRIGUES",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "GERSON LUIS GUIMARAES ANTUNES",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "GERSON PAZ DE OLIVEIRA",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "HUGO ROGERIO RAMIRES DE SOUZA",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "JORGE LUIS DA SILVA",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "LEONARDO RICARDO AGUIAR",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "LUIZ HENRIQUE BARCELLOS DOS SANTOS",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "MAURICIO DA SILVA SILVA",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "RAFAEL GOMES BAPTISTA",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "SANDRO BARZI",
+    "cargo": "Cinegrafista",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "EVERTON ANDRE BATISTA LOPES",
+    "cargo": "Comunicador",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "VALDIR STANZIONE",
+    "cargo": "Contador",
+    "setor": "Contabilidade"
+  },
+  {
+    "nome": "TIAGO PERONI",
+    "cargo": "Coordenador (a) de Marketing",
+    "setor": "Marketing"
+  },
+  {
+    "nome": "VITOR HUGO SANTOS DA SILVA",
+    "cargo": "Coordenador (a) de Opec",
+    "setor": "Operações Comerciais"
+  },
+  {
+    "nome": "LUIZA CLAUDIA GONCALVES",
+    "cargo": "Coordenadora de Controladoria",
+    "setor": "Administração"
+  },
+  {
+    "nome": "DIVA DOS SANTOS RODRIGUES",
+    "cargo": "Copeira",
+    "setor": "Diretoria"
+  },
+  {
+    "nome": "MAURICIO GODINHO DOS SANTOS",
+    "cargo": "Diretor Administrativo",
+    "setor": "Administração"
+  },
+  {
+    "nome": "WELLINGTON ALMEIDA MACHADO",
+    "cargo": "Diretor Comercial",
+    "setor": "Comercial"
+  },
+  {
+    "nome": "FILIPE MOLL KONIG",
+    "cargo": "Diretor de Imagens",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "GILSON ADEMIR SCHNEIDER JAQUES",
+    "cargo": "Diretor de Imagens",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "BERNARDO BRAGA BARREIRO",
+    "cargo": "Diretor de Programação",
+    "setor": "Programa"
+  },
+  {
+    "nome": "JOAO SILVIO SILVA",
+    "cargo": "Diretor Institucional",
+    "setor": "Comercial"
+  },
+  {
+    "nome": "GUSTAVO FRAGA BRANDAO PAULUS",
+    "cargo": "Diretor Superintendente",
+    "setor": "Diretoria"
+  },
+  {
+    "nome": "JERONIMO PINHEIRO PIRES",
+    "cargo": "Editor Chefe",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "VINICIUS MAESTRI DE OLIVEIRA FREIRE",
+    "cargo": "Editor Chefe",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "CRISTIANO LESZCZYNSKI SOUTO",
+    "cargo": "Editor de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "GERSON LUIS VIEIRA LOPES",
+    "cargo": "Editor de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "GIOVANE ALVES DA SILVA",
+    "cargo": "Editor de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "JOSE LUIS VILLAR CARDOSO JUNIOR",
+    "cargo": "Editor de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "MARCO ANTONIO FARIAS OLIVEIRA JUNIOR",
+    "cargo": "Editor de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "MARLUANA ROSPA FERNANDES",
+    "cargo": "Editor de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "NEI EPIFANIO PEREIRA",
+    "cargo": "Editor de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "RAFAEL SILVEIRA DE AZEVEDO",
+    "cargo": "Editor de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "WAGNER BELLOLI PORTO",
+    "cargo": "Editor de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "FABIO ANDRE TEIXEIRA LEHMEN",
+    "cargo": "Editor Executivo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "IGOR PEREIRA DE OLIVEIRA",
+    "cargo": "Editor Executivo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "TANIRA BOLIVAR LEBEDEFF",
+    "cargo": "Editor Executivo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "VINICIUS FARIAS DA SILVA",
+    "cargo": "Editor Executivo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "CARMEL REIS MOSTARDEIRO",
+    "cargo": "Editora Chefe",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "ALDREY DORNELES BARBOSA",
+    "cargo": "Editora de Texto",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "ANA RITA SANTANNA MARINI",
+    "cargo": "Editora de Texto",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "FERNANDA OLIVEIRA BIERHALS",
+    "cargo": "Editora de Texto",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "FERNANDA PENNA ESPINELLI WACLAWOVSKY",
+    "cargo": "Editora de Texto",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "JOELLEN RIBEIRO SOARES",
+    "cargo": "Editora de Texto",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "LUISA CRISTINA MEIMES",
+    "cargo": "Editora de Texto",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "MONIQUE MATIAS DORNELLES",
+    "cargo": "Editora de Texto",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "ROSA MARIA TORRES AMARAL",
+    "cargo": "Editora de Texto",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "ANA JULIA ISSE",
+    "cargo": "EditoraChefe",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "LUIZ FERNANDO DA SILVA DE NASCIMENTO",
+    "cargo": "Eletricista",
+    "setor": "Técnica"
+  },
+  {
+    "nome": "ADRIANO BARBOSA RESTA",
+    "cargo": "Encarregado de Transporte",
+    "setor": "Transportes"
+  },
+  {
+    "nome": "BERNARDO DA CUNHA CONTRI",
+    "cargo": "Estagiário",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "HENRI SOMENSI",
+    "cargo": "Estagiário",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "JOÃO VICTOR FREITAS BATISTELA TRINDADE DA SILVA",
+    "cargo": "Estagiário",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "MELISSA SILVEIRA PAZ",
+    "cargo": "Estagiário",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "VICENTI CIOTTA LIMA",
+    "cargo": "Estagiário",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "ALAN CAMPOS DE FREITAS",
+    "cargo": "Executivo (a) de Contas",
+    "setor": "Comercial"
+  },
+  {
+    "nome": "ANA LUIZA CORREA",
+    "cargo": "Executivo (a) de Contas",
+    "setor": "Comercial Vale dos Sinos/Serra"
+  },
+  {
+    "nome": "MARCELO SILVEIRA GOEBEL",
+    "cargo": "Executivo de Contas",
+    "setor": "comercial"
+  },
+  {
+    "nome": "PEDRO HENRIQUE DA SILVA STEFANELLO",
+    "cargo": "FIGURINISTA",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "GUILHERME KEPLER MACHADO",
+    "cargo": "Gerente de Jornalismo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "DIOGENES RODRIGUES",
+    "cargo": "Gerente de Operações e Engenharia",
+    "setor": "Técnica"
+  },
+  {
+    "nome": "FERNANDA CORNELIS D AVILA DA SILVEIRA",
+    "cargo": "Gerente de Recursos Humanos",
+    "setor": "Recursos Humanos"
+  },
+  {
+    "nome": "DEBORA CRUZ DE ANHAIA",
+    "cargo": "Gerente Financeiro",
+    "setor": "Financeiro"
+  },
+  {
+    "nome": "JESSICA WEBER MEDEIROS",
+    "cargo": "Locutor Apresentador Animador",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "CRISTIANA BEATRIZ BARBOZA DE JESUS JARDIM",
+    "cargo": "Maquiadora",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "PAOLA BUENO SOARES",
+    "cargo": "Maquiadora",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "ALEXANDRE FRANCA TELLES",
+    "cargo": "Motorista Executivo",
+    "setor": "Diretoria"
+  },
+  {
+    "nome": "FABIANO NUNES RAMOS",
+    "cargo": "Operador de Áudio",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "GUILHERME SILVEIRA DA SILVA",
+    "cargo": "Operador de Áudio",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "CAIO CESAR ARAUJO RODRIGUES",
+    "cargo": "Operador de Caracteres",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "WILZA GABRIELA CANTO DOS SANTOS",
+    "cargo": "Operador de Caracteres",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "Wilza Gabriela Canto dos Santos",
+    "cargo": "Operador de Caracteres",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "FERNANDO CESAR VIANNA",
+    "cargo": "Operador de Controle Mestre",
+    "setor": "Programa"
+  },
+  {
+    "nome": "FILIPE SELISTER E SILVA",
+    "cargo": "Operador de Controle Mestre",
+    "setor": "Programa"
+  },
+  {
+    "nome": "JULIO CESAR DA SILVA CUNHA",
+    "cargo": "Operador de Controle Mestre",
+    "setor": "Programa"
+  },
+  {
+    "nome": "REGINALDO NUNES DA SILVA",
+    "cargo": "Operador de Controle Mestre",
+    "setor": "Programa"
+  },
+  {
+    "nome": "BRUNA JAQUES E SILVA XAVIER",
+    "cargo": "Operador de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "EDUARDO RODRIGUES DE SOUZA",
+    "cargo": "Operador de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "ELISANGELA DE ANDRADE",
+    "cargo": "Operador de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "RODRIGO OLIVEIRA DA CRUZ",
+    "cargo": "Operador de VT",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "BRUNA MARÇAL CABRERA",
+    "cargo": "Pauteira",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "ALANDER AGUIAR DIAZ",
+    "cargo": "Pauteiro",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "TIAGO PICOLOTTO MARTINEZ",
+    "cargo": "Pauteiro",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "TOBIAS GANCEDO DE ARAUJO",
+    "cargo": "Pauteiro",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "FELIPE CONTE ROCHA",
+    "cargo": "Produtor Executivo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "ISRAEL ALVES CORREA",
+    "cargo": "Produtor Executivo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "RENATO GAVA RODRIGUES",
+    "cargo": "Produtor Executivo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "CAMILA RAFAELA DE OLIVEIRA ALEMANY",
+    "cargo": "Produtora Executiva",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "EDIQUELI BIANCA DA SILVA",
+    "cargo": "Produtora Executiva",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "LUMA PIRES DE OLIVEIRA",
+    "cargo": "Produtora Executiva",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "PAULA FABYOLLA JOAQUIM MEZA",
+    "cargo": "Produtora Executiva",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "JULIETE DA MAIA CAMILO",
+    "cargo": "Recepcionista",
+    "setor": "Administração"
+  },
+  {
+    "nome": "DAIANE DALLE TESE NUNES",
+    "cargo": "Repórter",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "EDUARDO AUGUSTO LORO PINZON",
+    "cargo": "Repórter",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "FELIPE BUENO DA ROSA",
+    "cargo": "Repórter",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "JONATHA GRUTZMANN BITTENCOURT",
+    "cargo": "Repórter",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "LILIANE DIAS PEREIRA",
+    "cargo": "Repórter",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "MARCELI DUTRA DA SILVA",
+    "cargo": "Repórter",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "RICARDO NASCIMENTO DE AZEREDO",
+    "cargo": "Repórter",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "VANESSA SCHABBACH FELIPPE",
+    "cargo": "Repórter",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "VITOR LUIZ DA COSTA",
+    "cargo": "Repórter",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "VITORIA LEDUR MATOS",
+    "cargo": "Repórter",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "FELIPE FONSECA MACHADO",
+    "cargo": "Repórter Mojo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "GABRIEL COSTA SILVEIRA",
+    "cargo": "Repórter Mojo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "LAURA ROLIM DA SILVA",
+    "cargo": "Repórter Mojo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "MARRONE GONÇALVES DA SILVA",
+    "cargo": "Repórter Mojo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "RODRIGO DOS SANTOS OLIVEIRA",
+    "cargo": "Repórter Mojo",
+    "setor": "Jornalismo"
+  },
+  {
+    "nome": "ALEXANDRE SOARES MARQUES",
+    "cargo": "Supervisor de Operações",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "DIOGENES FRITSCH DE MORAES",
+    "cargo": "Supervisor de Operações",
+    "setor": "Operacional"
+  },
+  {
+    "nome": "LUIS FABIANO DA SILVA",
+    "cargo": "Supervisor de Programação",
+    "setor": "Programa"
+  },
+  {
+    "nome": "FABIO ROSA DE OLIVEIRA",
+    "cargo": "Supervisor Técnico",
+    "setor": "Técnica"
+  },
+  {
+    "nome": "BRUNO SELAU DOS SANTOS",
+    "cargo": "Supervisor(a) de T.I.",
+    "setor": "TI - Tecnologia da Informação"
+  },
+  {
+    "nome": "MARCIA MACHADO DAUDT",
+    "cargo": "SUPERVISORA COMERCIAL",
+    "setor": "Comercial"
+  },
+  {
+    "nome": "SAMIR BREUNIG FONSECA",
+    "cargo": "Técnico de Estação RRT",
+    "setor": "Técnica"
+  },
+  {
+    "nome": "CARLOS ALBERTO GRUBEL",
+    "cargo": "Técnico de Manutenção TV",
+    "setor": "Técnica"
+  },
+  {
+    "nome": "JOSE PACHECO POMINA",
+    "cargo": "Técnico de Manutenção TV",
+    "setor": "Técnica"
+  },
+  {
+    "nome": "THIAGO COSTA NARDON",
+    "cargo": "Técnico de Manutenção TV",
+    "setor": "Técnica"
+  },
+  {
+    "nome": "T.I",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Frente Swicher",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário  Ilha 1",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Ilha 2",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Ilha 3",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Ilha 4",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Switcher",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Gustavo Paulos",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Almoxarifado",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Áudio",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Cabine Off",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Camarim",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Central Tecnica",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Meet",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Diretor De Camera",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Portaria",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Prog/Mark",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Carolina Monteiro",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Sala De Reunião",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Play Aot",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Tp",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Pc Geração",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Frente Switcher",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Livre",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Master",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Sala Tecnica",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Sabrina",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Adriano Resta",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Amanda Pacheco",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Daisy",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Isabel Cristina",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Fabiana",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Amanda",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Susi",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Valdir",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Claudia",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Franciele Rosa",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Miriam",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Debora",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Guilherme",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Vitor",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Duda",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Portaria",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Luis Fabiano",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Bernardo",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Julliete",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Fernanda Cornelis",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Fabio Anderon",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Mylena",
+    "cargo": "",
+    "setor": ""
+  },
+  {
     "nome": "João Otávio",
-    "cargo": "Gerente",
-    "setor": "Financeiro",
-    "matricula": "001",
-    "email": "jlobo@recordguaiba.tv.br"
-  },
-  {
-    "nome": "Maria Souza",
     "cargo": "",
-    "setor": "",
-    "matricula": "",
-    "email": ""
+    "setor": ""
   },
   {
-    "nome": "Carlos Andrade",
+    "nome": "Amailson Gawlinski",
     "cargo": "",
-    "setor": "",
-    "matricula": "",
-    "email": ""
+    "setor": ""
   },
   {
-    "nome": "Ana Paula",
+    "nome": "Samir",
     "cargo": "",
-    "setor": "",
-    "matricula": "",
-    "email": ""
+    "setor": ""
   },
   {
-    "nome": "patricia",
-    "cargo": "aprendiz",
-    "setor": "finnceiro",
-    "matricula": "002",
-    "email": "ijbdw8yfhidbqi"
+    "nome": "Fabio",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Pacheco",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Guilherme Strevinki",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Bruno",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Tiago Ferreira",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Ester",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Gabriel Campos",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Paola Rodrigues",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Mauricio",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Rodrigo Chagas",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Silvio",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Camila Rafaela",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Felipe Conte",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Carmel Reis",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Guilherme Kepler",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Leo Henrique Saballa",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Bruna Marçal",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Igor Pereira",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Leonardo Lara",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Alander Aguiar",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Alexandre",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "José Henrique",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Joellen Ribeiro",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Bernado Da Cunha",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Fabio Andre",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Paula Fabyolla",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Vicente Ciotta",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Rosa Maria",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Fernanda Penna",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Tanira Bolivar",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Ana Rita",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Natan Moreira",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Fernanda Oliveira",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Ricardo Azeredo",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Carla Seabra",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Gava",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Sala Do T.I",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Almoxarifado",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Audio Hibrida",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Ti",
+    "cargo": "",
+    "setor": ""
+  },
+  {
+    "nome": "Usuário Sala De Audio",
+    "cargo": "",
+    "setor": ""
   }
 ]

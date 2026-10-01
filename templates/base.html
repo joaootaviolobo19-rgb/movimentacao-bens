@@ -1,256 +1,128 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<!doctype html>
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block titulo %}Sistema de Patrimônio{% endblock %}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #F1F5F9;
-    --card: #FFFFFF;
-    --border: #E2E8F0;
-    --border-strong: #CBD5E1;
-    --text: #0F172A;
-    --text-muted: #64748B;
-    --primary: #2563EB;
-    --primary-hover: #1D4ED8;
-    --success: #059669;
-    --danger: #DC2626;
-    --warning: #D97706;
-    --sidebar: #0B1220;
-    --sidebar-hover: #1E293B;
-    --sidebar-active: #1E293B;
-    --sidebar-text: #94A3B8;
-    --sidebar-text-active: #FFFFFF;
-  }
-  html, body { height: 100%; }
-  body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    font-size: 14px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
-  .layout { display: flex; min-height: 100vh; }
-
-  /* ============ SIDEBAR ============ */
-  .sidebar {
-    width: 240px; flex-shrink: 0;
-    background: var(--sidebar); color: var(--sidebar-text);
-    display: flex; flex-direction: column;
-    position: sticky; top: 0; height: 100vh; overflow-y: auto;
-  }
-  .brand {
-    display: flex; align-items: center; gap: 12px;
-    padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.06);
-  }
-  .brand-icon {
-    width: 36px; height: 36px; border-radius: 9px;
-    background: linear-gradient(135deg, #3B82F6, #2563EB);
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-weight: 800; font-size: 14px;
-    box-shadow: 0 4px 12px rgba(59,130,246,.35);
-  }
-  .brand-text { display: flex; flex-direction: column; }
-  .brand-name { color: #fff; font-weight: 700; font-size: 14px; }
-  .brand-sub { color: var(--sidebar-text); font-size: 11px; }
-  .nav { padding: 16px 12px; flex: 1; }
-  .nav-label {
-    display: block; color: #475569; font-size: 11px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.05em;
-    padding: 12px 12px 6px;
-  }
-  .nav-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; border-radius: 8px;
-    color: var(--sidebar-text); text-decoration: none;
-    font-weight: 500; font-size: 13px;
-    transition: background .15s, color .15s;
-    margin-bottom: 2px;
-  }
-  .nav-item:hover { background: var(--sidebar-hover); color: #fff; }
-  .nav-item.active { background: var(--sidebar-active); color: #fff; }
-  .nav-item.active::before {
-    content: ''; position: absolute;
-  }
-  .nav-item svg { width: 16px; height: 16px; opacity: .8; flex-shrink: 0; }
-  .nav-item.active svg { opacity: 1; }
-
-  /* ============ MAIN ============ */
-  .main { flex: 1; min-width: 0; padding: 28px 32px; }
-  .page-header { display: flex; justify-content: space-between; align-items: flex-start;
-                 margin-bottom: 24px; flex-wrap: wrap; gap: 14px; }
-  .page-title { font-size: 22px; font-weight: 700; color: var(--text); }
-  .page-sub { color: var(--text-muted); font-size: 13px; margin-top: 3px; }
-
-  .flash {
-    padding: 12px 16px; border-radius: 9px; margin-bottom: 18px;
-    font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 8px;
-  }
-  .flash.ok   { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
-  .flash.erro { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
-
-  .card {
-    background: var(--card); border-radius: 12px;
-    border: 1px solid var(--border);
-    padding: 24px; margin-bottom: 20px;
-    box-shadow: 0 1px 2px rgba(15,23,42,.04);
-  }
-  .card-title {
-    font-size: 15px; font-weight: 700; color: var(--text);
-    margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
-  }
-
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .campo { display: flex; flex-direction: column; }
-  .campo.full { grid-column: 1 / -1; }
-  label { font-weight: 600; color: var(--text); margin-bottom: 6px; font-size: 13px; }
-  select, input, textarea {
-    padding: 10px 12px; border: 1px solid var(--border-strong);
-    border-radius: 8px; font-size: 14px; background: #fff;
-    font-family: inherit; color: var(--text);
-    transition: border-color .15s, box-shadow .15s; outline: none;
-  }
-  select:focus, input:focus, textarea:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37,99,235,.12);
-  }
-  textarea { resize: vertical; font-family: inherit; }
-
-  button, .botao {
-    padding: 10px 16px; background: var(--primary); color: #fff;
-    border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
-    cursor: pointer; text-decoration: none; display: inline-flex;
-    align-items: center; gap: 6px; font-family: inherit;
-    transition: background .15s;
-  }
-  button:hover, .botao:hover { background: var(--primary-hover); }
-  .botao.secundario {
-    background: #fff; color: var(--text); border: 1px solid var(--border-strong);
-  }
-  .botao.secundario:hover { background: #F8FAFC; }
-  .botao.sucesso { background: var(--success); }
-  .botao.sucesso:hover { background: #047857; }
-  .botao.perigo { background: var(--danger); }
-  .botao.perigo:hover { background: #B91C1C; }
-  .botao.pequeno { padding: 6px 10px; font-size: 12px; }
-
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead th {
-    background: #F8FAFC; color: var(--text-muted);
-    font-weight: 600; font-size: 11px; text-transform: uppercase;
-    letter-spacing: 0.03em; padding: 12px;
-    border-bottom: 1px solid var(--border); text-align: left;
-  }
-  tbody td {
-    padding: 12px; border-bottom: 1px solid var(--border);
-    color: var(--text); vertical-align: middle;
-  }
-  tbody tr:last-child td { border-bottom: none; }
-  tbody tr:hover td { background: #F8FAFC; }
-
-  .badge {
-    display: inline-block; padding: 3px 9px; border-radius: 999px;
-    font-size: 11px; font-weight: 600;
-  }
-  .badge.novo    { background: #DBEAFE; color: #1E40AF; }
-  .badge.bom     { background: #D1FAE5; color: #065F46; }
-  .badge.regular { background: #FEF3C7; color: #92400E; }
-  .badge.ruim    { background: #FEE2E2; color: #991B1B; }
-  .badge.cat     { background: #E0E7FF; color: #3730A3; }
-
-  .stat-card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 12px; padding: 20px;
-    box-shadow: 0 1px 2px rgba(15,23,42,.04);
-  }
-  .stat-label { color: var(--text-muted); font-size: 12px; font-weight: 500;
-                text-transform: uppercase; letter-spacing: 0.03em; }
-  .stat-value { color: var(--text); font-size: 28px; font-weight: 700; margin-top: 6px; }
-
-  .acoes-cell { display: flex; gap: 6px; justify-content: flex-end; }
-  .acoes-cell button, .acoes-cell a {
-    padding: 6px 10px; font-size: 12px; border-radius: 6px;
-    background: #fff; color: var(--text); border: 1px solid var(--border-strong);
-    text-decoration: none; cursor: pointer; font-weight: 600;
-  }
-  .acoes-cell button.perigo { color: var(--danger); border-color: #FECACA; }
-  .acoes-cell button.perigo:hover { background: #FEF2F2; }
-
-  .tabs {
-    display: flex; gap: 4px; margin-bottom: 20px;
-    background: #F1F5F9; padding: 4px; border-radius: 10px;
-    border: 1px solid var(--border); width: fit-content;
-  }
-  .tabs a {
-    padding: 8px 18px; border-radius: 7px; color: var(--text-muted);
-    text-decoration: none; font-weight: 600; font-size: 13px;
-    transition: background .15s, color .15s;
-  }
-  .tabs a:hover { color: var(--text); }
-  .tabs a.ativo { background: #fff; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
-
-  @media (max-width: 768px) {
-    .layout { flex-direction: column; }
-    .sidebar { width: 100%; height: auto; position: static; }
-    .brand { padding: 16px; }
-    .nav { display: flex; overflow-x: auto; padding: 8px; gap: 4px; }
-    .nav-label { display: none; }
-    .nav-item { white-space: nowrap; margin: 0; }
-    .main { padding: 20px 16px; }
-    .grid { grid-template-columns: 1fr; }
-  }
-</style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Inventário T.I.{% endblock %} · Inventário T.I.</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<div class="layout">
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-icon">SP</div>
-      <div class="brand-text">
-        <span class="brand-name">Patrimônio</span>
-        <span class="brand-sub">Gestão de Bens</span>
-      </div>
-    </div>
-    <nav class="nav">
-      <span class="nav-label">Operação</span>
-      <a href="/" class="nav-item {% if ativo=='registrar' %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        Registrar
-      </a>
-      <a href="/planilha" class="nav-item {% if ativo=='planilha' %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-        Planilha
-      </a>
-      <a href="/historico" class="nav-item {% if ativo=='historico' %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
-        Histórico
-      </a>
-      <span class="nav-label">Gerenciar</span>
-      <a href="/cadastros" class="nav-item {% if ativo=='cadastros' %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Cadastros
-      </a>
-      <span class="nav-label">Sistema</span>
-      <a href="/configuracoes" class="nav-item {% if ativo=='config' %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        Configurações
-      </a>
-    </nav>
-  </aside>
-  <main class="main">
-    {% with mensagens = get_flashed_messages(with_categories=true) %}
-      {% for categoria, msg in mensagens %}
-        <div class="flash {{ categoria }}">{{ msg }}</div>
-      {% endfor %}
-    {% endwith %}
-    {% block conteudo %}{% endblock %}
-  </main>
+
+<div class="app-shell">
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon"><i class="bi bi-pc-display-horizontal"></i></div>
+            <div class="brand-text">
+                <strong>Inventário T.I.</strong>
+                <small>Gestão de Ativos</small>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">Principal</div>
+            <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                <i class="bi bi-grid-1x2"></i> <span>Dashboard</span>
+            </a>
+            <a href="/bens" class="nav-link {% if request.path.startswith('/bens') %}active{% endif %}">
+                <i class="bi bi-list-ul"></i> <span>Bens</span>
+            </a>
+            <a href="/planilha" class="nav-link {% if request.path.startswith('/planilha') %}active{% endif %}">
+                <i class="bi bi-table"></i> <span>Planilha</span>
+            </a>
+            <a href="/funcionarios" class="nav-link {% if request.path.startswith('/funcionarios') %}active{% endif %}">
+                <i class="bi bi-people"></i> <span>Funcionários</span>
+            </a>
+            <a href="/teia" class="nav-link {% if request.path.startswith('/teia') %}active{% endif %}">
+                <i class="bi bi-diagram-3"></i> <span>Teia</span>
+            </a>
+
+            <div class="nav-section">Operações</div>
+            <a href="/movimentar" class="nav-link {% if request.path.startswith('/movimentar') %}active{% endif %}">
+                <i class="bi bi-arrow-left-right"></i> <span>Registrar</span>
+            </a>
+            <a href="/movimentacoes" class="nav-link {% if request.path.startswith('/movimentacoes') %}active{% endif %}">
+                <i class="bi bi-clock-history"></i> <span>Movimentações</span>
+            </a>
+            <a href="/escanear" class="nav-link {% if request.path.startswith('/escanear') %}active{% endif %}">
+                <i class="bi bi-search"></i> <span>Buscar</span>
+            </a>
+            <a href="/etiquetas" class="nav-link {% if request.path.startswith('/etiquetas') %}active{% endif %}">
+                <i class="bi bi-qr-code"></i> <span>Etiquetas</span>
+            </a>
+
+            <div class="nav-section">Sistema</div>
+            <a href="/configuracoes" class="nav-link {% if request.path.startswith('/configuracoes') %}active{% endif %}">
+                <i class="bi bi-gear"></i> <span>Configurações</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-mini">
+                <div class="user-avatar">TI</div>
+                <div class="user-info">
+                    <strong>Administrador</strong>
+                    <small>Suporte Técnico</small>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="fecharSidebar()"></div>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h1 class="topbar-title">{{ self.title() }}</h1>
+            </div>
+            <div class="topbar-right">
+                <span class="topbar-clock" id="topbarClock"></span>
+            </div>
+        </header>
+
+        <div class="content">
+            {% block content %}{% endblock %}
+        </div>
+
+    </main>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    function tick() {
+        const el = document.getElementById('topbarClock');
+        if (!el) return;
+        const d = new Date();
+        el.textContent = d.toLocaleDateString('pt-BR') + ' · ' +
+                         d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    }
+    tick(); setInterval(tick, 30000);
+
+    function toggleSidebar() {
+        const sb = document.getElementById('sidebar');
+        const ov = document.getElementById('sidebarOverlay');
+        sb.classList.toggle('open');
+        ov.classList.toggle('show');
+    }
+    function fecharSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('show');
+    }
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') fecharSidebar();
+    });
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

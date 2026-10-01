@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}Bens{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="text-muted small">
+        <strong class="text-dark">{{bens|length}}</strong> bem(ns) encontrado(s)
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/bens/exportar.csv" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-download me-1"></i> Exportar CSV
+        </a>
+        <button class="btn btn-success btn-sm" onclick="novoBem()">
+            <i class="bi bi-plus-lg me-1"></i> Novo Bem
+        </button>
+    </div>
+</div>
+
+<form class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <input name="q" class="form-control form-control-sm" placeholder="Buscar por hostname, patrimônio, modelo..." value="{{filtros.q}}">
+            </div>
+            <div class="col-md-3">
+                <select name="cat" class="form-select form-select-sm">
+                    <option value="">Todas as categorias</option>
+                    {% for c in categorias %}<option value="{{c}}" {{'selected' if c==filtros.cat}}>{{c}}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="dep" class="form-select form-select-sm">
+                    <option value="">Departamentos</option>
+                    {% for d in departamentos %}<option value="{{d}}" {{'selected' if d==filtros.dep}}>{{d}}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="resp" class="form-select form-select-sm">
+                    <option value="">Responsáveis</option>
+                    {% for r in responsaveis %}<option value="{{r}}" {{'selected' if r==filtros.resp}}>{{r}}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1 d-grid">
+                <button class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Categoria</th>
+                    <th>Marca / Modelo</th>
+                    <th>Hostname</th>
+                    <th>Patrimônio</th>
+                    <th>Departamento</th>
+                    <th>Responsável</th>
+                    <th>Status</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for b in bens %}
+                <tr data-id="{{b.id}}" data-bem='{{b|tojson}}'>
+                    <td><span class="badge bg-info-subtle">{{b.categoria}}</span></td>
+                    <td>
+                        <strong>{{b.marca}}</strong>
+                        {% if b.modelo %}<br><small class="text-muted">{{b.modelo}}</small>{% endif %}
+                    </td>
+                    <td>{% if b.hostname %}<code>{{b.hostname}}</code>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                    <td>{{b.patrimonio or '—'}}</td>
+                    <td class="small">{{b.departamento or '—'}}</td>
+                    <td class="small">{{b.responsavel or '—'}}</td>
+                    <td>
+                        {% set s = (b.status or '')|upper %}
+                        {% if 'OK' in s or 'BOM' in s %}<span class="badge bg-success">{{b.status}}</span>
+                        {% elif 'RUIM' in s %}<span class="badge bg-danger">{{b.status}}</span>
+                        {% elif 'DESCARTE' in s %}<span class="badge bg-warning">{{b.status}}</span>
+                        {% else %}<span class="badge bg-secondary">{{b.status or '—'}}</span>{% endif %}
+                    </td>
+                    <td class="text-end text-nowrap">
+                        <button class="btn btn-outline-primary btn-sm" onclick="editarBem({{b.id}})" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" onclick="transferirBem({{b.id}})" title="Transferir">
+                            <i class="bi bi-arrow-left-right"></i>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" onclick="excluirBem({{b.id}})" title="Excluir">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+                        Nenhum bem encontrado.
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalBem" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-pc-display me-2"></i><span id="tituloModal">Novo Bem</span></h5>
+                <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="bem_id">
+                <div class="row g-3">
+                    {% for c,l in [('categoria','Categoria'),('marca','Marca'),('modelo','Modelo'),
+                        ('hostname','Hostname'),('patrimonio','Patrimônio'),('serial','Serial'),
+                        ('departamento','Departamento'),('responsavel','Responsável'),
+                        ('ramal','Ramal'),('ip','IP'),('status','Status'),
+                        ('cpu','CPU'),('disco','Disco'),('ram','RAM'),('iso','ISO')] %}
+                    <div class="col-md-6">
+                        <label class="form-label">{{l}}</label>
+                        <input id="bem_{{c}}" class="form-control form-control-sm">
+                    </div>
+                    {% endfor %}
+                    <div class="col-12">
+                        <label class="form-label">Observação</label>
+                        <textarea id="bem_observacao" class="form-control form-control-sm" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" onclick="salvarBem()"><i class="bi bi-check-lg me-1"></i> Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalTransf" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-arrow-left-right me-2"></i>Transferir Bem</h5>
+                <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="transf_id">
+                <div class="mb-3">
+                    <label class="form-label">Novo responsável</label>
+                    <input id="transf_responsavel" class="form-control" list="listaFuncs">
+                    <datalist id="listaFuncs">{% for r in responsaveis %}<option value="{{r}}">{% endfor %}</datalist>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Novo departamento</label>
+                    <input id="transf_departamento" class="form-control" list="listaDeps">
+                    <datalist id="listaDeps">{% for d in departamentos %}<option value="{{d}}">{% endfor %}</datalist>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Observação</label>
+                    <textarea id="transf_obs" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="confirmarTransferencia()"><i class="bi bi-arrow-left-right me-1"></i> Transferir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CAMPOS = ['categoria','marca','modelo','hostname','patrimonio','serial',
+    'departamento','responsavel','ramal','ip','status','cpu','disco','ram','iso','observacao'];
+
+function novoBem(){
+    document.getElementById('tituloModal').textContent = 'Novo Bem';
+    document.getElementById('bem_id').value = '';
+    CAMPOS.forEach(c => document.getElementById('bem_'+c).value = '');
+    new bootstrap.Modal(document.getElementById('modalBem')).show();
+}
+
+function editarBem(id){
+    const bem = JSON.parse(document.querySelector(`tr[data-id="${id}"]`).dataset.bem);
+    document.getElementById('tituloModal').textContent = 'Editar Bem';
+    document.getElementById('bem_id').value = id;
+    CAMPOS.forEach(c => document.getElementById('bem_'+c).value = bem[c] || '');
+    new bootstrap.Modal(document.getElementById('modalBem')).show();
+}
+
+async function salvarBem(){
+    const d = {id: document.getElementById('bem_id').value || null};
+    CAMPOS.forEach(c => d[c] = document.getElementById('bem_'+c).value);
+    const r = await fetch('/bens/salvar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)});
+    const j = await r.json();
+    if (j.ok) location.reload(); else alert(j.msg);
+}
+
+async function excluirBem(id){
+    if (!confirm('Excluir este bem?')) return;
+    await fetch('/bens/excluir/'+id, {method:'POST'});
+    location.reload();
+}
+
+function transferirBem(id){
+    const bem = JSON.parse(document.querySelector(`tr[data-id="${id}"]`).dataset.bem);
+    document.getElementById('transf_id').value = id;
+    document.getElementById('transf_responsavel').value = bem.responsavel || '';
+    document.getElementById('transf_departamento').value = bem.departamento || '';
+    document.getElementById('transf_obs').value = '';
+    new bootstrap.Modal(document.getElementById('modalTransf')).show();
+}
+
+async function confirmarTransferencia(){
+    const d = {
+        id: parseInt(document.getElementById('transf_id').value),
+        novo_responsavel: document.getElementById('transf_responsavel').value,
+        novo_departamento: document.getElementById('transf_departamento').value,
+        obs: document.getElementById('transf_obs').value
+    };
+    const r = await fetch('/bens/transferir', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)});
+    const j = await r.json();
+    if (j.ok) location.reload();
+}
+</script>
+{% endblock %}
