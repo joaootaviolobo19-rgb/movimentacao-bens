@@ -7,7 +7,7 @@
   "smtp_tls": true,
   "remetente_nome": "Sistema de Movimentação - TI",
   "destinatarios_ferias": [
-    "joaootaviolobo18@gmail.com"
+    "ti@recordguaiba.tv.br"
   ],
   "destinatarios_relatorio": [],
   "assunto_ferias": "[TI] Alerta: Férias terminam amanhã",
