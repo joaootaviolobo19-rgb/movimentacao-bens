@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import email_sender
+import usuarios as mod_usuarios
+import unicodedata
 import os
 import json
 import csv
@@ -7,8 +9,9 @@ import re
 import glob
 import shutil
 from datetime import datetime
-from collections import defaultdict
-from flask import Flask, render_template, request, jsonify, send_file
+from collections import defaultdict, Counter
+from flask import (Flask, render_template, request, jsonify, send_file,
+                   session, redirect, url_for)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DADOS = os.path.join(BASE_DIR, "dados")
@@ -16,6 +19,29 @@ os.makedirs(DADOS, exist_ok=True)
 
 app = Flask(__name__)
 app.secret_key = "ti-inventario-2026"
+
+
+ROTAS_RECEPCAO = {
+    "/recepcao",
+    "/logout",
+    "/api/alertas_ferias",
+}
+
+
+@app.before_request
+def verificar_acesso():
+    if request.path.startswith("/static") or request.path in ("/login", "/logout"):
+        return None
+
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    if session.get("tipo") == "recepcao":
+        if request.path not in ROTAS_RECEPCAO and not request.path.startswith("/api/"):
+            return redirect(url_for("recepcao_view"))
+
+    return None
+
 
 ARQ_BENS = os.path.join(DADOS, "bens.json")
 ARQ_FUNC = os.path.join(DADOS, "funcionarios.json")
@@ -41,7 +67,8 @@ COLS = [
 
 
 def _achar_csv():
-    for p in [os.path.join(BASE_DIR, "Levantamento*.csv"), os.path.join(BASE_DIR, "..", "Levantamento*.csv")]:
+    for p in [os.path.join(BASE_DIR, "Levantamento*.csv"),
+              os.path.join(BASE_DIR, "..", "Levantamento*.csv")]:
         achados = sorted(glob.glob(p))
         if achados:
             return os.path.abspath(achados[0])
@@ -155,15 +182,296 @@ def load_projetos(): return _load(ARQ_PROJ, [])
 def save_projetos(d): _save(ARQ_PROJ, d)
 
 
-def next_id(lista): return (max([x.get("id", 0)
-                                 for x in lista]) + 1) if lista else 1
+def next_id(lista):
+    return (max([x.get("id", 0) for x in lista]) + 1) if lista else 1
 
 
-def normalizar(s): return re.sub(r"\s+", " ", (s or "").strip())
+def normalizar(s):
+    return re.sub(r"\s+", " ", (s or "").strip())
+
+
+def norm_nome(s):
+    s = normalizar(s or "").upper()
+    s = unicodedata.normalize('NFD', s)
+    s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
+    return s
+
+
+DEPTO_SINONIMOS = {
+    "administracao": "administrativo",
+    "admin": "administrativo",
+    "adm": "administrativo",
+    "administrativa": "administrativo",
+    "operacoes": "operacional",
+    "operacao": "operacional",
+    "rh": "recursos humanos",
+    "recursos humanos": "recursos humanos",
+    "tecnico": "tecnica",
+    "tecnica": "tecnica",
+    "contabil": "contabilidade",
+    "juridica": "juridico",
+    "juridico": "juridico",
+}
+
+
+def norm_depto(s):
+    if not s:
+        return ""
+    n = norm_nome(s).lower().strip()
+    return DEPTO_SINONIMOS.get(n, n)
+
+
+def _partes_nome(nome):
+    """Retorna (primeiro, ultimo) normalizados."""
+    p = norm_nome(nome).split()
+    if not p:
+        return None, None
+    return p[0], (p[-1] if len(p) > 1 else p[0])
+
+
+# ============================================================
+# FÉRIAS
+# ============================================================
+
+def ferias_ativas_set():
+    """Set de nomes completos normalizados em férias hoje."""
+    ferias = load_ferias()
+    ativos = set()
+    hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    for f in ferias:
+        status = (f.get("status") or "").strip()
+        if status in ("Concluído", "Cancelado", ""):
+            continue
+        try:
+            ini = datetime.strptime(f.get("inicio", ""), "%Y-%m-%d")
+            fim = datetime.strptime(f.get("fim", ""), "%Y-%m-%d")
+            if ini <= hoje <= fim:
+                ativos.add(norm_nome(f.get("nome", "")))
+        except Exception:
+            pass
+    return ativos
+
+
+def ferias_ativas_chaves():
+    """Set de (1º nome, último nome) de quem está de férias hoje."""
+    ferias = load_ferias()
+    chaves = set()
+    hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    for f in ferias:
+        status = (f.get("status") or "").strip()
+        if status in ("Concluído", "Cancelado", ""):
+            continue
+        try:
+            ini = datetime.strptime(f.get("inicio", ""), "%Y-%m-%d")
+            fim = datetime.strptime(f.get("fim", ""), "%Y-%m-%d")
+        except Exception:
+            continue
+        if not (ini <= hoje <= fim):
+            continue
+        partes = norm_nome(f.get("nome", "")).split()
+        if not partes:
+            continue
+        primeiro = partes[0]
+        ultimo = partes[-1] if len(partes) > 1 else partes[0]
+        chaves.add((primeiro, ultimo))
+    return chaves
+
+
+def _nome_em_ferias(nome, chaves):
+    """Verifica se 'nome' bate com alguma chave (1º + último) de férias."""
+    if not nome:
+        return False
+    partes = norm_nome(nome).split()
+    if not partes:
+        return False
+    primeiro = partes[0]
+    ultimo = partes[-1] if len(partes) > 1 else partes[0]
+    return (primeiro, ultimo) in chaves
+
+
+def ferias_em_andamento_lista():
+    """Retorna lista enriquecida SÓ das férias em andamento hoje (lê ferias.json).
+       Usada na aba 'Em férias' da Recepção."""
+    ferias = load_ferias()
+    hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    lista = []
+    for i, f in enumerate(ferias):
+        try:
+            ini = datetime.strptime(f.get("inicio", ""), "%Y-%m-%d")
+            fim = datetime.strptime(f.get("fim", ""), "%Y-%m-%d")
+        except Exception:
+            continue
+        if not (ini <= hoje <= fim):
+            continue
+        total = (fim - ini).days or 1
+        progresso = round(((hoje - ini).days / total) * 100)
+        lista.append({
+            "idx": i,
+            "nome": f.get("nome", ""),
+            "inicio": ini.strftime("%d/%m/%Y"),
+            "fim": fim.strftime("%d/%m/%Y"),
+            "inicio_iso": f.get("inicio", ""),
+            "fim_iso": f.get("fim", ""),
+            "obs": f.get("obs", ""),
+            "progresso": progresso,
+            "dias_restantes": (fim - hoje).days,
+        })
+    lista.sort(key=lambda x: x["dias_restantes"])
+    return lista
+
+
+# ============================================================
+# AGRUPAMENTO AUTOMÁTICO DE PESSOAS
+# ============================================================
+
+def _pessoas_agrupadas():
+    """
+    Une bens + funcionários por pessoa aplicando 2 regras (a Regra 3 foi REMOVIDA):
+      1) nome completo exato igual
+      2) mesmo (1º + último) e (um sem depto OU mesmo depto)
+    """
+    bens = load_bens()
+    funcs = load_funcs()
+
+    registros = []
+    for b in bens:
+        nome = normalizar(b.get("responsavel") or "")
+        if not nome:
+            continue
+        registros.append({
+            "nome": nome,
+            "departamento": (b.get("departamento") or "").strip(),
+            "ramal": (b.get("ramal") or "").strip(),
+            "cargo": "",
+            "bens": [b],
+        })
+    for f in funcs:
+        nome = normalizar(f.get("nome") or "")
+        if not nome:
+            continue
+        registros.append({
+            "nome": nome,
+            "departamento": (f.get("setor") or "").strip(),
+            "ramal": "",
+            "cargo": (f.get("cargo") or "").strip(),
+            "bens": [],
+        })
+
+    n = len(registros)
+    if n == 0:
+        return []
+
+    parent = list(range(n))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[rb] = ra
+
+    def dep_norm(r):
+        return norm_depto(r.get("departamento") or "")
+
+    # -------- Regra 1: nome completo EXATO igual --------
+    por_nome = defaultdict(list)
+    for i, r in enumerate(registros):
+        por_nome[norm_nome(r["nome"])].append(i)
+    for idxs in por_nome.values():
+        for i in idxs[1:]:
+            union(idxs[0], i)
+
+    # -------- Regra 2: (1º + último) iguais + depto compatível --------
+    por_1o_ult = defaultdict(list)
+    for i, r in enumerate(registros):
+        p1, pu = _partes_nome(r["nome"])
+        if p1:
+            por_1o_ult[(p1, pu)].append(i)
+
+    for idxs in por_1o_ult.values():
+        if len(idxs) < 2:
+            continue
+        por_dep = defaultdict(list)
+        sem_dep = []
+        for i in idxs:
+            d = dep_norm(registros[i])
+            if d:
+                por_dep[d].append(i)
+            else:
+                sem_dep.append(i)
+
+        if len(por_dep) <= 1:
+            for i in idxs[1:]:
+                union(idxs[0], i)
+        else:
+            if sem_dep and por_dep:
+                maior = max(por_dep.items(), key=lambda x: len(x[1]))[0]
+                por_dep[maior].extend(sem_dep)
+            for grupo in por_dep.values():
+                for i in grupo[1:]:
+                    union(grupo[0], i)
+
+    # (Regra 3 REMOVIDA — causava falsos positivos como Gerson)
+
+    # -------- Consolida --------
+    grupos = defaultdict(list)
+    for i in range(n):
+        grupos[find(i)].append(registros[i])
+
+    chaves_ferias = ferias_ativas_chaves()
+    resultado = []
+
+    for grupo in grupos.values():
+        nome_final = max((g["nome"] for g in grupo), key=len, default="")
+
+        cargo_final = ""
+        for g in sorted(grupo, key=lambda x: -len(x["nome"])):
+            if g["cargo"]:
+                cargo_final = g["cargo"]
+                break
+
+        deps = Counter()
+        for g in grupo:
+            d = (g["departamento"] or "").strip()
+            if d:
+                deps[d] += 1
+        depto_final = deps.most_common(1)[0][0] if deps else ""
+
+        ramal_final = ""
+        for g in grupo:
+            if g["ramal"]:
+                ramal_final = g["ramal"]
+                break
+
+        todos_bens = []
+        for g in grupo:
+            todos_bens.extend(g["bens"])
+
+        em_ferias = False
+        for g in grupo:
+            if _nome_em_ferias(g["nome"], chaves_ferias):
+                em_ferias = True
+                break
+
+        resultado.append({
+            "nome": nome_final,
+            "cargo": cargo_final,
+            "departamento": depto_final,
+            "ramal": ramal_final,
+            "em_ferias": em_ferias,
+            "bens": todos_bens,
+        })
+
+    return resultado
 
 
 CABECALHO_MOV = ["data", "bem_id", "categoria", "patrimonio", "hostname",
-                 "de_responsavel", "para_responsavel", "de_departamento", "para_departamento", "obs"]
+                 "de_responsavel", "para_responsavel", "de_departamento",
+                 "para_departamento", "obs"]
 
 
 def registrar_movimento(b, de_resp, de_dep, para_resp, para_dep, obs):
@@ -172,26 +480,28 @@ def registrar_movimento(b, de_resp, de_dep, para_resp, para_dep, obs):
         w = csv.writer(f)
         if not existe:
             w.writerow(CABECALHO_MOV)
-        w.writerow([datetime.now().strftime("%Y-%m-%d %H:%M"), b.get("id"), b.get("categoria"),
-                   b.get("patrimonio"), b.get("hostname"), de_resp, para_resp, de_dep, para_dep, obs])
+        w.writerow([datetime.now().strftime("%Y-%m-%d %H:%M"), b.get("id"),
+                    b.get("categoria"), b.get("patrimonio"), b.get("hostname"),
+                    de_resp, para_resp, de_dep, para_dep, obs])
 
 
 def agrupar_por_funcionario():
-    bens = load_bens()
-    funcs = load_funcs()
-    mapa = defaultdict(list)
-    for b in bens:
-        resp = normalizar(b.get("responsavel") or "") or "SEM RESPONSAVEL"
-        mapa[resp].append(b)
-    info = {normalizar(f["nome"]).upper(): f for f in funcs}
+    pessoas = _pessoas_agrupadas()
     teia = []
-    for nome, itens in mapa.items():
-        meta = info.get(nome.upper(), {})
+    for p in pessoas:
+        if not p["bens"]:
+            continue
         cats = defaultdict(int)
-        for it in itens:
+        for it in p["bens"]:
             cats[it.get("categoria") or "Outros"] += 1
-        teia.append({"nome": nome, "cargo": meta.get("cargo", ""), "setor": meta.get("setor", ""), "total": len(
-            itens), "por_categoria": dict(sorted(cats.items(), key=lambda x: -x[1])), "bens": itens})
+        teia.append({
+            "nome": p["nome"],
+            "cargo": p["cargo"],
+            "setor": p["departamento"],
+            "total": len(p["bens"]),
+            "por_categoria": dict(sorted(cats.items(), key=lambda x: -x[1])),
+            "bens": p["bens"],
+        })
     teia.sort(key=lambda x: (-x["total"], x["nome"]))
     return teia
 
@@ -257,8 +567,14 @@ def utility_processor():
     return dict(progresso_ferias=progresso_ferias)
 
 
+# ============================================================
+# ROTAS
+# ============================================================
+
 @app.route("/")
 def dashboard():
+    if session.get("tipo") == "recepcao":
+        return redirect(url_for("recepcao_view"))
     bens = load_bens()
     funcs = load_funcs()
     deps = load_deps()
@@ -275,7 +591,17 @@ def dashboard():
         with open(ARQ_MOV, encoding="utf-8") as f:
             tot_mov = max(0, sum(1 for _ in f) - 1)
     graf = _dados_graficos()
-    return render_template("dashboard.html", total=len(bens), total_func=len(funcs), total_dep=len(deps), com_responsavel=com_resp, sem_responsavel=sem_resp, total_mov=tot_mov, por_status=dict(por_status), graf=graf)
+    return render_template(
+        "dashboard.html",
+        total=len(bens),
+        total_func=len(_pessoas_agrupadas()),
+        total_dep=len(deps),
+        com_responsavel=com_resp,
+        sem_responsavel=sem_resp,
+        total_mov=tot_mov,
+        por_status=dict(por_status),
+        graf=graf,
+    )
 
 
 @app.route("/bens")
@@ -295,15 +621,26 @@ def bens_view():
         bens = [b for b in bens if (b.get("departamento") or "") == dep]
     if resp:
         bens = [b for b in bens if normalizar(b.get("responsavel")) == resp]
-    return render_template("bens.html", bens=bens, categorias=sorted({b.get("categoria") for b in todos if b.get("categoria")}), departamentos=sorted({b.get("departamento") for b in todos if b.get("departamento")}), responsaveis=sorted({normalizar(b.get("responsavel")) for b in todos if b.get("responsavel")}), filtros={"q": q, "cat": cat, "dep": dep, "resp": resp})
+    return render_template(
+        "bens.html",
+        bens=bens,
+        categorias=sorted({b.get("categoria")
+                          for b in todos if b.get("categoria")}),
+        departamentos=sorted({b.get("departamento")
+                             for b in todos if b.get("departamento")}),
+        responsaveis=sorted({normalizar(b.get("responsavel"))
+                            for b in todos if b.get("responsavel")}),
+        filtros={"q": q, "cat": cat, "dep": dep, "resp": resp},
+    )
 
 
 @app.route("/bens/salvar", methods=["POST"])
 def bens_salvar():
     d = request.json or {}
     bens = load_bens()
-    campos = ["categoria", "modelo", "hostname", "patrimonio", "departamento", "responsavel",
-              "marca", "serial", "ramal", "ip", "observacao", "cpu", "disco", "ram", "iso", "status"]
+    campos = ["categoria", "modelo", "hostname", "patrimonio", "departamento",
+              "responsavel", "marca", "serial", "ramal", "ip", "observacao",
+              "cpu", "disco", "ram", "iso", "status"]
     item = {k: normalizar(d.get(k)) for k in campos}
     bid = d.get("id")
     if bid:
@@ -332,17 +669,19 @@ def bens_excluir(bid):
 def bens_exportar():
     if not CSV_PATH or not os.path.exists(CSV_PATH):
         return "CSV não encontrado", 404
-    return send_file(CSV_PATH, mimetype="text/csv", as_attachment=True, download_name="Levantamento_Geral1_controle.csv")
+    return send_file(CSV_PATH, mimetype="text/csv", as_attachment=True,
+                     download_name="Levantamento_Geral1_controle.csv")
 
 
 @app.route("/planilha")
 def planilha_view():
     bens = load_bens()
     cats = sorted({(b.get("categoria") or "").strip()
-                  for b in bens if (b.get("categoria") or "").strip()})
+                   for b in bens if (b.get("categoria") or "").strip()})
     deps = sorted({(b.get("departamento") or "").strip()
-                  for b in bens if (b.get("departamento") or "").strip()})
-    return render_template("planilha.html", bens=bens, cats=cats, deps=deps, total=len(bens))
+                   for b in bens if (b.get("departamento") or "").strip()})
+    return render_template("planilha.html", bens=bens, cats=cats, deps=deps,
+                           total=len(bens))
 
 
 @app.route("/api/bens/celula", methods=["POST"])
@@ -353,8 +692,10 @@ def api_bens_celula():
     valor = (d.get("valor") or "").strip()
     if bid is None or not campo:
         return jsonify({"ok": False, "msg": "Faltando id/campo"})
-    CAMPOS_PERMITIDOS = {"categoria", "modelo", "hostname", "patrimonio", "departamento", "responsavel",
-                         "marca", "serial", "ramal", "ip", "observacao", "cpu", "disco", "ram", "iso", "status"}
+    CAMPOS_PERMITIDOS = {"categoria", "modelo", "hostname", "patrimonio",
+                         "departamento", "responsavel", "marca", "serial",
+                         "ramal", "ip", "observacao", "cpu", "disco", "ram",
+                         "iso", "status"}
     if campo not in CAMPOS_PERMITIDOS:
         return jsonify({"ok": False, "msg": "Campo nao editavel"})
     bens = load_bens()
@@ -393,16 +734,21 @@ def api_bens_planilha_lote():
 
 @app.route("/funcionarios")
 def funcionarios_view():
-    funcs = load_funcs()
-    bens = load_bens()
-    cont = defaultdict(int)
-    for b in bens:
-        r = normalizar(b.get("responsavel"))
-        if r:
-            cont[r.upper()] += 1
-    for f in funcs:
-        f["total_bens"] = cont.get(normalizar(f["nome"]).upper(), 0)
-    return render_template("funcionarios.html", funcionarios=funcs)
+    pessoas = _pessoas_agrupadas()
+    funcs_nomes = {norm_nome(f.get("nome") or "") for f in load_funcs()}
+    resultado = []
+    for p in pessoas:
+        if norm_nome(p["nome"]) in funcs_nomes or any(
+            norm_nome(g) in funcs_nomes for g in [p["nome"]]
+        ):
+            resultado.append({
+                "nome": p["nome"],
+                "cargo": p["cargo"],
+                "setor": p["departamento"],
+                "total_bens": len(p["bens"]),
+            })
+    resultado.sort(key=lambda x: x["nome"].lower())
+    return render_template("funcionarios.html", funcionarios=resultado)
 
 
 @app.route("/funcionarios/salvar", methods=["POST"])
@@ -445,9 +791,11 @@ def movimentar_view():
     deps = load_deps()
     por_resp = defaultdict(list)
     for b in bens:
-        r = normalizar(b.get("responsavel")) or "SEM RESPONSAVEL"
+        r = normalizar(b.get("responsavel") or "") or "SEM RESPONSAVEL"
         por_resp[r].append(b)
-    return render_template("movimentar.html", bens=bens, funcionarios=funcs, departamentos=deps, por_resp={k: v for k, v in por_resp.items()})
+    return render_template("movimentar.html", bens=bens, funcionarios=funcs,
+                           departamentos=deps,
+                           por_resp={k: v for k, v in por_resp.items()})
 
 
 @app.route("/movimentar/registrar", methods=["POST"])
@@ -469,11 +817,12 @@ def movimentar_registrar():
             if dep_dest:
                 b["departamento"] = dep_dest
             b["atualizado_em"] = datetime.now().isoformat()
-            registrar_movimento(
-                b, ar, ad, b["responsavel"], b["departamento"], obs)
+            registrar_movimento(b, ar, ad, b["responsavel"],
+                                b["departamento"], obs)
             registrados += 1
     save_bens(bens)
-    return jsonify({"ok": True, "total": registrados, "msg": f"{registrados} movimentacao(oes) registrada(s)!"})
+    return jsonify({"ok": True, "total": registrados,
+                    "msg": f"{registrados} movimentacao(oes) registrada(s)!"})
 
 
 @app.route("/movimentacoes")
@@ -484,23 +833,94 @@ def movimentacoes_view():
             linhas = list(csv.DictReader(f))
     q = (request.args.get("q") or "").lower()
     if q:
-        linhas = [l for l in linhas if q in json.dumps(
-            l, ensure_ascii=False).lower()]
-    return render_template("movimentacoes.html", movimentacoes=list(reversed(linhas)), total=len(linhas), filtros={"q": q})
+        linhas = [l for l in linhas
+                  if q in json.dumps(l, ensure_ascii=False).lower()]
+    return render_template("movimentacoes.html",
+                           movimentacoes=list(reversed(linhas)),
+                           total=len(linhas), filtros={"q": q})
 
 
 @app.route("/movimentacoes/exportar.csv")
 def movimentacoes_exportar():
     if not os.path.exists(ARQ_MOV):
         return "Sem dados", 404
-    return send_file(ARQ_MOV, mimetype="text/csv", as_attachment=True, download_name="movimentacoes.csv")
+    return send_file(ARQ_MOV, mimetype="text/csv", as_attachment=True,
+                     download_name="movimentacoes.csv")
 
+
+# ============================================================
+# FÉRIAS - VIEW COM STATUS CALCULADO
+# ============================================================
 
 @app.route("/ferias")
 def ferias_view():
     ferias = load_ferias()
     funcs = load_funcs()
-    return render_template("ferias.html", ferias=ferias, funcionarios=funcs)
+    hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    enriquecidas = []
+    for i, f in enumerate(ferias):
+        status_manual = (f.get("status") or "").strip()
+        try:
+            ini = datetime.strptime(f.get("inicio", ""), "%Y-%m-%d")
+            fim = datetime.strptime(f.get("fim", ""), "%Y-%m-%d")
+        except Exception:
+            ini = fim = None
+
+        if status_manual in ("Concluído", "Cancelado"):
+            status_calc = status_manual
+        elif ini and fim:
+            if hoje < ini:
+                status_calc = "Futura"
+            elif ini <= hoje <= fim:
+                status_calc = "Em andamento"
+            else:
+                status_calc = "Encerrada"
+        else:
+            status_calc = status_manual or "—"
+
+        progresso = 0
+        if ini and fim:
+            if hoje < ini:
+                progresso = 0
+            elif hoje > fim:
+                progresso = 100
+            else:
+                total = (fim - ini).days or 1
+                progresso = round(((hoje - ini).days / total) * 100)
+
+        dias_restantes = None
+        if status_calc == "Em andamento" and fim:
+            dias_restantes = (fim - hoje).days
+
+        enriquecidas.append({
+            "idx": i,
+            "nome": f.get("nome", ""),
+            "inicio": f.get("inicio", ""),
+            "fim": f.get("fim", ""),
+            "status": status_calc,
+            "status_manual": status_manual,
+            "obs": f.get("obs", ""),
+            "progresso": progresso,
+            "dias_restantes": dias_restantes,
+        })
+
+    enriquecidas.sort(key=lambda x: x["inicio"] or "", reverse=True)
+
+    em_andamento = [f for f in enriquecidas if f["status"] == "Em andamento"]
+    futuras = [f for f in enriquecidas if f["status"] == "Futura"]
+    encerradas = [f for f in enriquecidas
+                  if f["status"] in ("Encerrada", "Concluído", "Cancelado")]
+
+    return render_template(
+        "ferias.html",
+        todas=enriquecidas,
+        em_andamento=em_andamento,
+        futuras=futuras,
+        encerradas=encerradas,
+        funcionarios=funcs,
+        hoje=hoje,
+    )
 
 
 @app.route("/ferias/salvar", methods=["POST"])
@@ -536,45 +956,53 @@ def ferias_excluir(idx):
     return jsonify({"ok": True})
 
 
+# ============================================================
+# RAMAIS - CORRIGIDO (responsaveis como lista)
+# ============================================================
+
 @app.route("/ramais")
 def ramais_view():
+    """Monta lista de ramais a partir dos BENS brutos (não agrupados)."""
     bens = load_bens()
-    ferias = load_ferias()
-
-    ferias_ativos = set()
-    hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    for f in ferias:
-        status = (f.get("status") or "").strip()
-        if status in ("Concluído", "Cancelado", ""):
-            continue
-        try:
-            ini = datetime.strptime(f.get("inicio", ""), "%Y-%m-%d")
-            fim = datetime.strptime(f.get("fim", ""), "%Y-%m-%d")
-            if ini <= hoje <= fim:
-                ferias_ativos.add(normalizar(f.get("nome", "")).upper())
-        except Exception:
-            pass
+    chaves_ferias = ferias_ativas_chaves()
 
     mapa = {}
     for b in bens:
         ramal = (b.get("ramal") or "").strip()
         if not ramal:
             continue
-        if ramal not in mapa:
-            mapa[ramal] = {
-                "ramal": ramal,
-                "responsaveis": [],
-                "departamento": b.get("departamento", ""),
-                "em_ferias": False,
-            }
-        r = normalizar(b.get("responsavel") or "")
-        if r and r not in mapa[ramal]["responsaveis"]:
-            mapa[ramal]["responsaveis"].append(r)
-            if r.upper() in ferias_ativos:
-                mapa[ramal]["em_ferias"] = True
+        nome = normalizar(b.get("responsavel") or "")
+        if not nome:
+            continue
+        dept = (b.get("departamento") or "").strip()
+        chave = f"{norm_nome(nome)}|{ramal}"
+        if chave in mapa:
+            continue
+        mapa[chave] = {
+            "nome": nome,
+            "ramal": ramal,
+            "departamento": dept,
+            "em_ferias": _nome_em_ferias(nome, chaves_ferias),
+        }
 
-    ramais_lista = sorted(mapa.values(), key=lambda x: x["ramal"])
-    return render_template("ramais.html", ramais=ramais_lista, total=len(ramais_lista))
+    por_ramal = defaultdict(list)
+    for item in mapa.values():
+        por_ramal[item["ramal"]].append(item)
+
+    ramais_lista = []
+    for ramal, pessoas in sorted(por_ramal.items()):
+        pessoas.sort(key=lambda x: x["nome"])
+        departamento = pessoas[0]["departamento"] if pessoas else ""
+        em_ferias = any(p["em_ferias"] for p in pessoas)
+        ramais_lista.append({
+            "ramal": ramal,
+            "responsaveis": pessoas,
+            "departamento": departamento,
+            "em_ferias": em_ferias,
+        })
+
+    return render_template("ramais.html", ramais=ramais_lista,
+                           total=len(ramais_lista))
 
 
 @app.route("/projetos")
@@ -633,7 +1061,8 @@ def api_csv_info():
         tam = round(st.st_size / 1024, 1)
     except Exception:
         mod, tam = "?", 0
-    return jsonify({"ok": True, "caminho": CSV_PATH, "registros": len(bens), "tamanho_kb": tam, "modificado_em": mod})
+    return jsonify({"ok": True, "caminho": CSV_PATH, "registros": len(bens),
+                    "tamanho_kb": tam, "modificado_em": mod})
 
 
 @app.route("/api/alertas_ferias")
@@ -656,8 +1085,7 @@ def api_alertas_ferias():
 
         nome = f.get("nome", "—")
 
-        # Alerta de retorno: férias em andamento, faltam <= 7 dias para retornar
-        if status in ("Em Andamento", "Férias iniciada"):
+        if ini <= hoje <= fim:
             dias = (fim - hoje).days
             if dias <= 7:
                 alertas_retorno.append({
@@ -666,8 +1094,7 @@ def api_alertas_ferias():
                     "dias": dias,
                 })
 
-        # Alerta de bloqueio: férias não iniciadas que começam amanhã
-        if status == "Férias não iniciada":
+        if status == "Férias não iniciada" or (hoje < ini):
             dias = (ini - hoje).days
             if dias == 1:
                 alertas_bloqueio.append({
@@ -700,8 +1127,10 @@ def api_config_email_salvar():
         "smtp_user": (d.get("smtp_user") or "").strip(),
         "smtp_tls": bool(d.get("smtp_tls")),
         "remetente_nome": (d.get("remetente_nome") or "").strip(),
-        "destinatarios_ferias": [x.strip() for x in (d.get("destinatarios_ferias") or "").split(",") if x.strip()],
-        "destinatarios_relatorio": [x.strip() for x in (d.get("destinatarios_relatorio") or "").split(",") if x.strip()],
+        "destinatarios_ferias": [x.strip() for x in
+                                 (d.get("destinatarios_ferias") or "").split(",") if x.strip()],
+        "destinatarios_relatorio": [x.strip() for x in
+                                    (d.get("destinatarios_relatorio") or "").split(",") if x.strip()],
         "enviar_ferias": bool(d.get("enviar_ferias")),
         "enviar_relatorio": bool(d.get("enviar_relatorio")),
     })
@@ -737,12 +1166,9 @@ def api_config_email_testar():
         destinatarios, "[TI] Teste de configuração", corpo, tipo="teste")
     return jsonify({"ok": ok, "msg": msg})
 
-# ============ CRON EXTERNO (dispara e-mails) ============
-
 
 @app.route("/api/rodar_alertas/<token>")
 def api_rodar_alertas(token):
-    # Token secreto — só quem souber consegue rodar
     TOKEN_SECRETO = "record-ti-2026-movimentacao-secreto"
     if token != TOKEN_SECRETO:
         return jsonify({"ok": False, "msg": "Token inválido"}), 403
@@ -750,7 +1176,8 @@ def api_rodar_alertas(token):
     try:
         import enviar_alertas
         enviar_alertas.main()
-        return jsonify({"ok": True, "msg": "Alertas executados!", "hora": datetime.now().isoformat()})
+        return jsonify({"ok": True, "msg": "Alertas executados!",
+                        "hora": datetime.now().isoformat()})
     except Exception as e:
         return jsonify({"ok": False, "msg": f"Erro: {e}"}), 500
 
@@ -758,35 +1185,24 @@ def api_rodar_alertas(token):
 @app.route("/api/ramais_agrupados")
 def api_ramais_agrupados():
     bens = load_bens()
-    ferias = load_ferias()
+    chaves_ferias = ferias_ativas_chaves()
 
-    # Set de funcionários de férias ativas
-    ferias_ativos = set()
-    hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    for f in ferias:
-        status = (f.get("status") or "").strip()
-        if status in ("Concluído", "Cancelado", ""):
-            continue
-        try:
-            ini = datetime.strptime(f.get("inicio", ""), "%Y-%m-%d")
-            fim = datetime.strptime(f.get("fim", ""), "%Y-%m-%d")
-            if ini <= hoje <= fim:
-                ferias_ativos.add(normalizar(f.get("nome", "")).upper())
-        except Exception:
-            pass
-
-    # Agrupa por departamento
     grupos = defaultdict(lambda: {})
+    vistos = defaultdict(set)
     for b in bens:
         ramal = (b.get("ramal") or "").strip()
         dep = (b.get("departamento") or "Sem Departamento").strip()
         resp = normalizar(b.get("responsavel") or "")
-        if not ramal:
+        if not ramal or not resp:
             continue
+        chave = f"{norm_nome(resp)}"
+        if chave in vistos[(dep, ramal)]:
+            continue
+        vistos[(dep, ramal)].add(chave)
+
         if ramal not in grupos[dep]:
             grupos[dep][ramal] = []
-        if resp and resp not in grupos[dep][ramal]:
-            grupos[dep][ramal].append(resp)
+        grupos[dep][ramal].append(resp)
 
     PRIORIDADE = [
         "Diretor Executivo", "Diretor Administrativo", "Secretaria de Diretoria",
@@ -806,13 +1222,12 @@ def api_ramais_agrupados():
             nomes = []
             em_ferias = False
             for r in responsaveis:
-                if r.upper() in ferias_ativos:
+                ferias_flag = _nome_em_ferias(r, chaves_ferias)
+                if ferias_flag:
                     em_ferias = True
-                    nomes.append({"nome": r, "ferias": True})
-                else:
-                    nomes.append({"nome": r, "ferias": False})
-            lista.append(
-                {"ramal": ramal, "responsaveis": nomes, "em_ferias": em_ferias})
+                nomes.append({"nome": r, "ferias": ferias_flag})
+            lista.append({"ramal": ramal, "responsaveis": nomes,
+                          "em_ferias": em_ferias})
         departamentos.append({
             "nome": dep,
             "prioridade": _ordem(dep),
@@ -821,12 +1236,111 @@ def api_ramais_agrupados():
         })
 
     departamentos.sort(key=lambda x: (x["prioridade"], x["nome"]))
-
     return jsonify({
         "ok": True,
         "departamentos": departamentos,
         "total": sum(d["total"] for d in departamentos),
     })
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        usuario = (request.form.get("usuario") or "").strip()
+        senha = request.form.get("senha") or ""
+        u = mod_usuarios.autenticar(usuario, senha)
+        if u:
+            session["usuario"] = u["usuario"]
+            session["nome"] = u["nome"]
+            session["tipo"] = u["tipo"]
+            if u["tipo"] == "recepcao":
+                return redirect(url_for("recepcao_view"))
+            return redirect(url_for("dashboard"))
+        return render_template("login.html", erro="Usuário ou senha incorretos.")
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
+@app.route("/api/trocar_senha", methods=["POST"])
+def api_trocar_senha():
+    if "usuario" not in session:
+        return jsonify({"ok": False, "msg": "Não autenticado"}), 401
+    d = request.get_json(force=True, silent=True) or {}
+    senha_atual = (d.get("senha_atual") or "").strip()
+    senha_nova = (d.get("senha_nova") or "").strip()
+    confirmar = (d.get("confirmar") or "").strip()
+
+    if not senha_atual or not senha_nova:
+        return jsonify({"ok": False, "msg": "Preencha todos os campos"})
+    if senha_nova != confirmar:
+        return jsonify({"ok": False, "msg": "As senhas não coincidem"})
+    if len(senha_nova) < 6:
+        return jsonify({"ok": False, "msg": "Senha deve ter ao menos 6 caracteres"})
+
+    usuario = session["usuario"]
+    u = mod_usuarios.autenticar(usuario, senha_atual)
+    if not u:
+        return jsonify({"ok": False, "msg": "Senha atual incorreta"})
+
+    mod_usuarios.trocar_senha(usuario, senha_nova)
+    return jsonify({"ok": True, "msg": "Senha alterada com sucesso!"})
+
+
+@app.route("/recepcao")
+def recepcao_view():
+    """Rende duas abas: Colaboradores (agrupados) e Em férias (lê ferias.json)."""
+    pessoas = _pessoas_agrupadas()
+    registros = []
+    for p in pessoas:
+        r = {
+            "nome": p["nome"],
+            "cargo": p["cargo"],
+            "departamento": p["departamento"],
+            "ramal": p["ramal"],
+            "em_ferias": p["em_ferias"],
+        }
+        r["busca"] = f'{r["nome"]} {r["cargo"]} {r["departamento"]} {r["ramal"]}'
+        registros.append(r)
+    registros.sort(key=lambda x: x["nome"].lower())
+
+    ferias_ativas = ferias_em_andamento_lista()
+
+    return render_template("recepcao.html",
+                           registros=registros,
+                           total=len(registros),
+                           ferias_ativas=ferias_ativas,
+                           total_ferias=len(ferias_ativas))
+
+
+@app.route("/usuarios")
+def usuarios_view():
+    if session.get("tipo") != "admin":
+        return redirect(url_for("dashboard"))
+    lista = mod_usuarios.listar()
+    return render_template("usuarios.html", usuarios=lista)
+
+
+@app.route("/api/admin/trocar_senha", methods=["POST"])
+def api_admin_trocar_senha():
+    if session.get("tipo") != "admin":
+        return jsonify({"ok": False, "msg": "Acesso negado"}), 403
+    d = request.get_json(force=True, silent=True) or {}
+    usuario = (d.get("usuario") or "").strip()
+    nova = (d.get("nova_senha") or "").strip()
+    if not usuario or not nova:
+        return jsonify({"ok": False, "msg": "Preencha usuário e nova senha"})
+    if len(nova) < 6:
+        return jsonify({"ok": False, "msg": "Senha deve ter ao menos 6 caracteres"})
+    ok = mod_usuarios.resetar_senha(usuario, nova)
+    if not ok:
+        return jsonify({"ok": False, "msg": "Usuário não encontrado"})
+    return jsonify({"ok": True,
+                    "msg": f"Senha de '{usuario}' alterada com sucesso!"})
 
 
 if __name__ == "__main__":

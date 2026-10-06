@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Usuários - Record{% endblock %}
+{% block page_title %}Usuários{% endblock %}
+
+{% block styles %}
+<style>
+    .tabela-usuarios {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    .tabela-usuarios table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+    }
+    .tabela-usuarios thead th {
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        padding: 14px 20px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .tabela-usuarios tbody td {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+    }
+    .tabela-usuarios tbody tr:last-child td { border-bottom: none; }
+    .tabela-usuarios tbody tr:hover { background: #fafbfc; }
+
+    .tipo-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    .tipo-admin { background: #eff6ff; color: #1d4ed8; }
+    .tipo-recepcao { background: #fef3c7; color: #92400e; }
+    .tipo-outro { background: #f1f5f9; color: #475569; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h5 class="mb-3" style="color:#1a2a4a; font-weight:600;">
+    Usuários do Sistema
+    <span class="text-muted fw-normal" style="font-size:0.9rem;">({{ usuarios|length }})</span>
+</h5>
+
+<div class="tabela-usuarios">
+    <table>
+        <thead>
+            <tr>
+                <th>Usuário</th>
+                <th>Nome</th>
+                <th>Tipo</th>
+                <th style="width:220px; text-align:right;">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in usuarios %}
+            <tr>
+                <td style="font-weight:600; color:#1a2a4a;">{{ u.usuario }}</td>
+                <td>{{ u.nome }}</td>
+                <td>
+                    <span class="tipo-badge tipo-{{ u.tipo }}">{{ u.tipo }}</span>
+                </td>
+                <td style="text-align:right;">
+                    <button class="btn btn-sm btn-outline-primary"
+                            onclick="abrirTrocaSenha('{{ u.usuario }}', '{{ u.nome }}')">
+                        <i class="fas fa-key me-1"></i> Trocar senha
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal: trocar senha de outro usuário -->
+<div class="modal fade" id="modalAdminSenha" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1a2a4a; color:white;">
+                <h5 class="modal-title"><i class="fas fa-key me-2"></i>Trocar Senha</h5>
+                <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">
+                    Usuário: <strong id="nomeUsuarioSenha">—</strong>
+                </p>
+                <div id="alertaAdminSenha" class="alert" style="display:none;"></div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Nova senha</label>
+                    <input type="text" class="form-control" id="novaSenhaAdmin" minlength="6" autocomplete="off">
+                    <small class="text-muted">Mínimo 6 caracteres. Será exibida em texto para você repassar ao usuário.</small>
+                </div>
+                <input type="hidden" id="usuarioAlvoSenha">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" id="btnSalvarAdminSenha">
+                    <i class="fas fa-save me-1"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let modalAdminSenha;
+
+    function abrirTrocaSenha(usuario, nome) {
+        document.getElementById('usuarioAlvoSenha').value = usuario;
+        document.getElementById('nomeUsuarioSenha').textContent = nome + ' (' + usuario + ')';
+        document.getElementById('novaSenhaAdmin').value = '';
+        document.getElementById('alertaAdminSenha').style.display = 'none';
+        if (!modalAdminSenha) {
+            modalAdminSenha = new bootstrap.Modal(document.getElementById('modalAdminSenha'));
+        }
+        modalAdminSenha.show();
+    }
+
+    document.getElementById('btnSalvarAdminSenha')?.addEventListener('click', async function() {
+        const alerta = document.getElementById('alertaAdminSenha');
+        const usuario = document.getElementById('usuarioAlvoSenha').value;
+        const nova = document.getElementById('novaSenhaAdmin').value;
+
+        alerta.style.display = 'none';
+        if (!nova || nova.length < 6) {
+            alerta.className = 'alert alert-danger';
+            alerta.textContent = 'Senha deve ter ao menos 6 caracteres.';
+            alerta.style.display = 'block';
+            return;
+        }
+
+        const btn = this;
+        const orig = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Salvando...';
+
+        try {
+            const r = await fetch('/api/admin/trocar_senha', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario: usuario, nova_senha: nova })
+            });
+            const j = await r.json();
+
+            alerta.className = j.ok ? 'alert alert-success' : 'alert alert-danger';
+            alerta.textContent = (j.ok ? '✅ ' : '❌ ') + j.msg;
+            alerta.style.display = 'block';
+
+            if (j.ok) {
+                setTimeout(() => modalAdminSenha.hide(), 1800);
+            }
+        } catch (e) {
+            alerta.className = 'alert alert-danger';
+            alerta.textContent = '❌ Erro de conexão.';
+            alerta.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+        }
+    });
+</script>
+{% endblock %}
