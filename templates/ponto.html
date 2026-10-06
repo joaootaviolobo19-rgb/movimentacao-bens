@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Controle de Ponto{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-clock me-2"></i>Calculadora de Ponto</div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Horário de Entrada</label>
+                        <input type="time" class="form-control" id="entrada" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo de Jornada</label>
+                        <select class="form-select" id="jornada">
+                            <option value="6.25">6h15min</option>
+                            <option value="7.25">7h15min</option>
+                            <option value="8" selected>8 horas</option>
+                            <option value="9">9h (sábado)</option>
+                            <option value="9.8">9h48min</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Duração do Intervalo (minutos)</label>
+                    <input type="number" class="form-control" id="intervalo" value="60" min="15" max="120" step="15">
+                </div>
+                <button class="btn btn-primary w-100" onclick="calcular()">
+                    <i class="bi bi-calculator me-1"></i> Calcular Horários
+                </button>
+
+                <div id="resultado" class="mt-4 d-none">
+                    <h5 class="border-bottom pb-2 mb-3"><i class="bi bi-list-check me-2"></i>Horários do Dia</h5>
+                    <div class="d-flex justify-content-between py-2 border-bottom"><strong>Entrada:</strong> <span id="r_entrada"></span></div>
+                    <div class="d-flex justify-content-between py-2 border-bottom"><strong>Saída p/ Intervalo:</strong> <span id="r_saida_int"></span></div>
+                    <div class="d-flex justify-content-between py-2 border-bottom"><strong>Retorno do Intervalo:</strong> <span id="r_retorno"></span></div>
+                    <div class="d-flex justify-content-between py-2 bg-light rounded px-3"><strong>SAÍDA:</strong> <span id="r_saida" class="fw-bold text-primary"></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function calcMinutos(hhmm){
+    const [h, m] = hhmm.split(':').map(Number);
+    return h * 60 + m;
+}
+function fmt(min){
+    min = ((min % 1440) + 1440) % 1440;
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+}
+function calcular(){
+    const entrada = document.getElementById('entrada').value;
+    const jornada = parseFloat(document.getElementById('jornada').value);
+    const intervalo = parseInt(document.getElementById('intervalo').value);
+
+    if (!entrada) { alert('Informe o horário de entrada.'); return; }
+
+    const e = calcMinutos(entrada);
+    const saidaIntervalo = e + 4 * 60;
+    const retorno = saidaIntervalo + intervalo;
+    const saidaFinal = e + (jornada * 60) + intervalo - 60;
+
+    document.getElementById('r_entrada').textContent = entrada;
+    document.getElementById('r_saida_int').textContent = fmt(saidaIntervalo);
+    document.getElementById('r_retorno').textContent = fmt(retorno);
+    document.getElementById('r_saida').textContent = fmt(saidaFinal);
+    document.getElementById('resultado').classList.remove('d-none');
+}
+</script>
+{% endblock %}

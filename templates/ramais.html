@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Ramais{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="text-muted small"><strong class="text-dark">{{total}}</strong> ramal(is) encontrado(s)</div>
+    <input id="buscaRamal" class="form-control form-control-sm" style="max-width:280px" placeholder="Buscar ramal..." oninput="filtrarRamal()">
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table mb-0" id="tabelaRamais">
+            <thead>
+                <tr>
+                    <th>Ramal</th>
+                    <th>Responsável</th>
+                    <th>Departamento</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for r in ramais %}
+                <tr>
+                    <td><span class="badge bg-primary fs-6">{{r.ramal}}</span></td>
+                    <td>{{r.responsavel or '—'}}</td>
+                    <td class="small text-muted">{{r.departamento or '—'}}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="3" class="text-center text-muted py-5">
+                    <i class="bi bi-telephone fs-1 d-block mb-2 opacity-50"></i>
+                    Nenhum ramal cadastrado nos bens.
+                </td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filtrarRamal(){
+    const q = document.getElementById('buscaRamal').value.toLowerCase();
+    document.querySelectorAll('#tabelaRamais tbody tr').forEach(tr => {
+        tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}
