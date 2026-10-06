@@ -2,9 +2,17 @@
 {% block title %}Ramais{% endblock %}
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="text-muted small"><strong class="text-dark">{{total}}</strong> ramal(is) encontrado(s)</div>
-    <input id="buscaRamal" class="form-control form-control-sm" style="max-width:280px" placeholder="Buscar ramal..." oninput="filtrarRamal()">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div class="text-muted small">
+        <strong class="text-dark">{{ total }}</strong> ramal(is) encontrado(s)
+    </div>
+    <div class="d-flex gap-2">
+        <input id="buscaRamal" class="form-control form-control-sm" style="max-width:250px"
+               placeholder="Buscar ramal ou responsável..." oninput="filtrar()">
+        <button class="btn btn-primary btn-sm" onclick="abrirModalExport()">
+            <i class="fas fa-file-pdf me-1"></i> Exportar PDF
+        </button>
+    </div>
 </div>
 
 <div class="card">
@@ -12,21 +20,24 @@
         <table class="table mb-0" id="tabelaRamais">
             <thead>
                 <tr>
-                    <th>Ramal</th>
+                    <th style="width:100px">Ramal</th>
                     <th>Responsável</th>
-                    <th>Departamento</th>
+                    <th style="width:25%">Departamento</th>
                 </tr>
             </thead>
             <tbody>
             {% for r in ramais %}
                 <tr>
-                    <td><span class="badge bg-primary fs-6">{{r.ramal}}</span></td>
-                    <td>{{r.responsavel or '—'}}</td>
-                    <td class="small text-muted">{{r.departamento or '—'}}</td>
+                    <td><span class="badge {% if r.em_ferias %}bg-warning{% else %}bg-primary{% endif %} fs-6">{{ r.ramal }}</span></td>
+                    <td>
+                        {% for resp in r.responsaveis %}{{ resp }}{% if not loop.last %} <span class="text-muted">/</span> {% endif %}{% endfor %}
+                        {% if r.em_ferias %}<span class="badge bg-warning text-dark ms-1">🌴 Férias</span>{% endif %}
+                    </td>
+                    <td class="small text-muted">{{ r.departamento or '—' }}</td>
                 </tr>
             {% else %}
                 <tr><td colspan="3" class="text-center text-muted py-5">
-                    <i class="bi bi-telephone fs-1 d-block mb-2 opacity-50"></i>
+                    <i class="fas fa-phone fs-1 d-block mb-2 opacity-50"></i>
                     Nenhum ramal cadastrado nos bens.
                 </td></tr>
             {% endfor %}
@@ -35,15 +46,299 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalExport" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="fas fa-file-pdf me-2"></i>Escolher o que exportar</h5>
+                <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted">Marque os departamentos que devem aparecer no PDF e clique em <strong>Gerar PDF</strong>. O arquivo será baixado automaticamente.</p>
+                <div class="mb-3 d-flex gap-2">
+                    <button class="btn btn-outline-primary btn-sm" onclick="marcarTodos(true)">Marcar todos</button>
+                    <button class="btn btn-outline-primary btn-sm" onclick="marcarTodos(false)">Desmarcar todos</button>
+                </div>
+                <div id="listaDepartamentos" class="row g-2"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="gerarPDF()"><i class="fas fa-download me-1"></i> Gerar PDF</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-function filtrarRamal(){
+function filtrar(){
     const q = document.getElementById('buscaRamal').value.toLowerCase();
     document.querySelectorAll('#tabelaRamais tbody tr').forEach(tr => {
         tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
 }
+
+let DEPARTAMENTOS_CACHE = [];
+
+async function abrirModalExport(){
+    const lista = document.getElementById('listaDepartamentos');
+    lista.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
+    try {
+        const r = await fetch('/api/ramais_agrupados');
+        const j = await r.json();
+        if (!j.ok) { alert('Erro ao carregar'); return; }
+        DEPARTAMENTOS_CACHE = j.departamentos;
+        lista.innerHTML = j.departamentos.map((d, i) => `
+            <div class="col-md-4">
+                <div class="form-check">
+                    <input class="form-check-input dep-check" type="checkbox" value="${i}" id="dep_${i}" checked>
+                    <label class="form-check-label small" for="dep_${i}">
+                        ${d.nome} <span class="text-muted">(${d.total})</span>
+                    </label>
+                </div>
+            </div>
+        `).join('');
+        new bootstrap.Modal(document.getElementById('modalExport')).show();
+    } catch (e) {
+        alert('Erro: ' + e.message);
+    }
+}
+
+function marcarTodos(marcar){
+    document.querySelectorAll('.dep-check').forEach(c => c.checked = marcar);
+}
+
+function escapeHtml(s){
+    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ===== Normalização de nome =====
+function norm(s){
+    return String(s || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, ' ');
+}
+
+async function gerarPDF(){
+    if (typeof html2canvas === 'undefined' || !window.jspdf) {
+        alert('Recarregue a página (Ctrl+F5) e tente novamente.');
+        return;
+    }
+
+    const selecionados = Array.from(document.querySelectorAll('.dep-check:checked'))
+        .map(c => DEPARTAMENTOS_CACHE[parseInt(c.value)]);
+    if (selecionados.length === 0) {
+        alert('Selecione pelo menos 1 departamento.');
+        return;
+    }
+
+    const btnGerar = document.querySelector('#modalExport .btn-primary');
+    const textoOriginal = btnGerar.innerHTML;
+    btnGerar.disabled = true;
+    btnGerar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Gerando...';
+
+    try {
+        const agora = new Date();
+        const dataStr = agora.toLocaleDateString('pt-BR');
+        const horaStr = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const dataHoraCompleta = `${dataStr} às ${horaStr}`;
+
+        // ====== Normalização ======
+        function norm(s){
+            return String(s || '')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .trim()
+                .toUpperCase()
+                .replace(/\s+/g, ' ');
+        }
+
+        // ====== Listas (com TODAS as variações) ======
+        // Ordem final desejada na linha 1:
+        //   1º Diretor Executivo / Diretoria Executiva
+        //   2º Diretor Administrativo / Diretoria Administrativa
+        //   3º Secretaria de Diretoria
+        const GRUPO_TOPO = [
+            // Posição 1: Executivo
+            ['DIRETOR EXECUTIVO', 'DIRETORIA EXECUTIVA'],
+            // Posição 2: Administrativo
+            ['DIRETOR ADMINISTRATIVO', 'DIRETORIA ADMINISTRATIVA'],
+            // Posição 3: Secretaria
+            ['SECRETARIA DE DIRETORIA', 'SECRETARIA DIRETORIA']
+        ];
+
+        // Outras diretorias que NÃO vão pro topo (vão pro resto)
+        const OUTRAS_DIRETORIAS = [
+            'DIRETORIA COMERCIAL', 'DIRETOR COMERCIAL',
+            'DIRETORIA INSTITUCIONAL', 'DIRETOR INSTITUCIONAL'
+        ];
+
+        const GRUPO_RECEPCAO = ['RECEPCAO', 'COPA', 'PORTARIA', 'SALA DE REUNIAO'];
+
+        const grupoTopo = [];   // Até 3 itens, ordenados por GRUPO_TOPO
+        const grupoRecep = [];
+        const restantes = [];
+
+        // Pra cada posição do topo, busca o departamento que bate
+        GRUPO_TOPO.forEach((variacoes, idxPosicao) => {
+            const encontrado = selecionados.find(dep =>
+                variacoes.includes(norm(dep.nome))
+            );
+            if (encontrado) {
+                grupoTopo.push({ dep: encontrado, posicao: idxPosicao });
+            }
+        });
+        // Ordena por posição definida
+        grupoTopo.sort((a, b) => a.posicao - b.posicao);
+
+        // Marca quem já foi pro topo
+        const usados = new Set(grupoTopo.map(x => norm(x.dep.nome)));
+
+        // Classifica o resto
+        selecionados.forEach(dep => {
+            const n = norm(dep.nome);
+            if (usados.has(n)) return; // já foi pro topo
+
+            if (GRUPO_RECEPCAO.includes(n)) {
+                grupoRecep.push(dep);
+            } else {
+                restantes.push(dep);
+            }
+        });
+
+        // Ordena recepção
+        grupoRecep.sort((a, b) => {
+            const ia = GRUPO_RECEPCAO.indexOf(norm(a.nome));
+            const ib = GRUPO_RECEPCAO.indexOf(norm(b.nome));
+            return ia - ib;
+        });
+
+        // Resto: 2 colunas balanceadas por altura
+        const pesoDept = d => 26 + (d.ramais.length * 22);
+        const colunaA = [], colunaB = [];
+        let pesoA = 0, pesoB = 0;
+        restantes.sort((a, b) => pesoDept(b) - pesoDept(a));
+        restantes.forEach(dep => {
+            const p = pesoDept(dep);
+            if (pesoA <= pesoB) { colunaA.push(dep); pesoA += p; }
+            else { colunaB.push(dep); pesoB += p; }
+        });
+        colunaA.sort((a, b) => a.nome.localeCompare(b.nome));
+        colunaB.sort((a, b) => a.nome.localeCompare(b.nome));
+
+        // HTML dos blocos
+        const gerarBlocoHtml = (dep) => {
+            const linhas = dep.ramais.map(r => {
+                const nomes = r.responsaveis.map(x => escapeHtml(x.nome)).join(' <span class="sep">/</span> ');
+                const cor = r.em_ferias ? '#d97706' : '#2563eb';
+                return `<div class="linha"><span class="nome">${nomes}</span><span class="badge" style="background:${cor}">${escapeHtml(r.ramal)}</span></div>`;
+            }).join('');
+            return `<div class="bloco"><div class="dep">${escapeHtml(dep.nome.toUpperCase())}</div>${linhas}</div>`;
+        };
+
+        const htmlTopo   = grupoTopo.map(x => gerarBlocoHtml(x.dep)).join('');
+        const htmlRecep  = grupoRecep.map(gerarBlocoHtml).join('');
+        const htmlA      = colunaA.map(gerarBlocoHtml).join('');
+        const htmlB      = colunaB.map(gerarBlocoHtml).join('');
+
+        const LARGURA = 1080;
+        const ALTURA = 1527;
+
+        const palco = document.createElement('div');
+        palco.style.cssText = `position:fixed;left:-9999px;top:0;width:${LARGURA}px;height:${ALTURA}px;background:#fff;font-family:Arial,sans-serif;box-sizing:border-box;padding:0;display:flex;flex-direction:column;`;
+
+        palco.innerHTML = `
+            <style>
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+                .cab {
+                    background: #2563eb; color: #fff; text-align: center;
+                    padding: 14px 0; font-size: 22px; font-weight: 700;
+                    letter-spacing: 2.5px; border-radius: 0;
+                    margin-bottom: 18px; flex-shrink: 0;
+                }
+                .corpo { flex: 1; display: flex; flex-direction: column; padding: 0 28px; min-height: 0; }
+
+                /* Topo: sempre 3 colunas */
+                .linha-topo {
+                    display: grid; grid-template-columns: repeat(3, 1fr);
+                    gap: 10px; margin-bottom: 12px; flex-shrink: 0;
+                }
+                /* Recepção: sempre 4 colunas */
+                .linha-recep {
+                    display: grid; grid-template-columns: repeat(4, 1fr);
+                    gap: 10px; margin-bottom: 14px; flex-shrink: 0;
+                }
+                /* Resto: 2 colunas */
+                .grid-resto {
+                    flex: 1; display: grid; grid-template-columns: 1fr 1fr;
+                    gap: 12px; min-height: 0;
+                }
+                .coluna-resto { display: flex; flex-direction: column; gap: 10px; }
+
+                .bloco { border-radius: 4px; overflow: hidden; }
+                .dep {
+                    background: #2563eb; color: #fff;
+                    padding: 4px 8px; font-size: 10px; font-weight: 700;
+                    letter-spacing: 0.4px; text-align: center;
+                }
+                .linha {
+                    display: flex; justify-content: space-between; align-items: center;
+                    padding: 3.5px 8px; font-size: 10.5px;
+                    background: #f8fafc; border-bottom: 1px solid #eef2f7; gap: 6px;
+                }
+                .linha:last-child { border-bottom: none; }
+                .nome { color: #334155; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .sep { color: #cbd5e1; }
+                .badge { color: #fff; font-size: 9.5px; font-weight: 700; padding: 1px 7px; border-radius: 7px; flex-shrink: 0; }
+                .rodape {
+                    text-align: center; font-size: 10px; color: #475569;
+                    padding: 10px 28px; margin-top: 6px;
+                    border-top: 1px solid #cbd5e1; flex-shrink: 0;
+                    font-weight: 500;
+                }
+            </style>
+            <div class="cab">LISTA DE RAMAIS</div>
+            <div class="corpo">
+                ${htmlTopo ? `<div class="linha-topo">${htmlTopo}</div>` : ''}
+                ${htmlRecep ? `<div class="linha-recep">${htmlRecep}</div>` : ''}
+                <div class="grid-resto">
+                    <div class="coluna-resto">${htmlA}</div>
+                    <div class="coluna-resto">${htmlB}</div>
+                </div>
+            </div>
+            <div class="rodape">Lista atualizada em ${dataHoraCompleta} • Para atualizações, entre em contato com o departamento de TI</div>
+        `;
+        document.body.appendChild(palco);
+
+        await new Promise(r => setTimeout(r, 300));
+
+        const canvas = await html2canvas(palco, {
+            scale: 2, useCORS: true, allowTaint: true,
+            backgroundColor: '#ffffff', logging: false,
+            width: LARGURA, height: ALTURA,
+        });
+
+        document.body.removeChild(palco);
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+        const imgData = canvas.toDataURL('image/png');
+        doc.addImage(imgData, 'PNG', 0, 0, 210, 297);
+        doc.save(`lista_ramais_${dataStr.replace(/\//g, '-')}.pdf`);
+
+        bootstrap.Modal.getInstance(document.getElementById('modalExport')).hide();
+    } catch (e) {
+        alert('Erro ao gerar PDF: ' + e.message);
+        console.error(e);
+    } finally {
+        btnGerar.disabled = false;
+        btnGerar.innerHTML = textoOriginal;
+    }
+}
+
 </script>
 {% endblock %}
