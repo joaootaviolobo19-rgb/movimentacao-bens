@@ -501,6 +501,57 @@ def api_alertas_ferias():
         "total": len(alertas_retorno) + len(alertas_bloqueio),
     })
 
+import email_sender
+
+@app.route("/configuracoes")
+def configuracoes_view():
+    cfg = email_sender.carregar_config()
+    return render_template("configuracoes.html", cfg=cfg)
+
+@app.route("/api/configuracoes_email/salvar", methods=["POST"])
+def api_config_email_salvar():
+    d = request.get_json(force=True, silent=True) or {}
+    cfg = email_sender.carregar_config()
+    cfg.update({
+        "ativo": bool(d.get("ativo")),
+        "smtp_host": (d.get("smtp_host") or "").strip(),
+        "smtp_port": int(d.get("smtp_port") or 587),
+        "smtp_user": (d.get("smtp_user") or "").strip(),
+        "smtp_tls": bool(d.get("smtp_tls")),
+        "remetente_nome": (d.get("remetente_nome") or "").strip(),
+        "destinatarios_ferias": [x.strip() for x in (d.get("destinatarios_ferias") or "").split(",") if x.strip()],
+        "destinatarios_relatorio": [x.strip() for x in (d.get("destinatarios_relatorio") or "").split(",") if x.strip()],
+        "enviar_ferias": bool(d.get("enviar_ferias")),
+        "enviar_relatorio": bool(d.get("enviar_relatorio")),
+    })
+    if d.get("smtp_pass"):
+        cfg["smtp_pass"] = email_sender.limpar_senha(d["smtp_pass"])
+    email_sender.salvar_config(cfg)
+    return jsonify({"ok": True, "msg": "Configurações salvas!"})
+
+@app.route("/api/configuracoes_email/testar", methods=["POST"])
+def api_config_email_testar():
+    d = request.get_json(force=True, silent=True) or {}
+    cfg = email_sender.carregar_config()
+    destinatarios = d.get("destinatarios") or cfg.get("destinatarios_ferias") or []
+    if isinstance(destinatarios, str):
+        destinatarios = [x.strip() for x in destinatarios.split(",") if x.strip()]
+    if not destinatarios:
+        return jsonify({"ok": False, "msg": "Informe pelo menos 1 destinatário."})
+    corpo = """
+    <div style="font-family:Arial,sans-serif; max-width:600px; margin:0 auto;">
+        <div style="background:#1a2a4a; color:white; padding:20px; border-radius:8px 8px 0 0;">
+            <h2 style="margin:0;">✅ Teste de E-mail</h2>
+        </div>
+        <div style="padding:20px; background:#fff; border:1px solid #e2e8f0; border-top:none;">
+            <p>Se você recebeu este e-mail, o SMTP está configurado corretamente!</p>
+            <p style="color:#64748b; font-size:13px;">Enviado em: {}</p>
+        </div>
+    </div>
+    """.format(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+    ok, msg = email_sender.enviar_email(destinatarios, "[TI] Teste de configuração", corpo, tipo="teste")
+    return jsonify({"ok": ok, "msg": msg})
+
 if __name__ == "__main__":
     print("\n" + "=" * 60)
     if CSV_PATH: print("  CSV fonte: " + CSV_PATH)

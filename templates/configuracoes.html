@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Configurações{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-envelope me-2"></i>Configurações de E-mail</div>
+            <div class="card-body">
+
+                <div class="form-check form-switch mb-4">
+                    <input class="form-check-input" type="checkbox" id="cfg_ativo" {% if cfg.ativo %}checked{% endif %}>
+                    <label class="form-check-label fw-bold" for="cfg_ativo">Ativar envio automático de e-mails</label>
+                </div>
+
+                <h6 class="border-bottom pb-2 mb-3">Servidor SMTP</h6>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label">Servidor SMTP</label>
+                        <input class="form-control" id="cfg_host" value="{{ cfg.smtp_host }}" placeholder="smtp.gmail.com">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Porta</label>
+                        <input class="form-control" id="cfg_port" type="number" value="{{ cfg.smtp_port }}">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">E-mail remetente (usuário)</label>
+                    <input class="form-control" id="cfg_user" value="{{ cfg.smtp_user }}" placeholder="ti@recordguiaba.tv.br">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Senha de App</label>
+                    <input class="form-control" id="cfg_pass" type="password" placeholder="Deixe em branco para manter a atual">
+                    <small class="text-muted">⚠️ Se usar Gmail, crie uma "Senha de App" em <a href="https://myaccount.google.com/apppasswords" target="_blank">myaccount.google.com/apppasswords</a></small>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="cfg_tls" {% if cfg.smtp_tls %}checked{% endif %}>
+                    <label class="form-check-label" for="cfg_tls">Usar STARTTLS (porta 587) — desmarcar se usar porta 465 (SSL)</label>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Nome do remetente</label>
+                    <input class="form-control" id="cfg_nome" value="{{ cfg.remetente_nome }}">
+                </div>
+
+                <h6 class="border-bottom pb-2 mb-3">Alertas de Férias</h6>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="cfg_enviar_ferias" {% if cfg.enviar_ferias %}checked{% endif %}>
+                    <label class="form-check-label" for="cfg_enviar_ferias">Enviar alerta 1 dia antes do retorno das férias</label>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Destinatários (separados por vírgula)</label>
+                    <input class="form-control" id="cfg_dest_ferias" value="{{ cfg.destinatarios_ferias|join(', ') }}" placeholder="ti@recordguiaba.tv.br, rh@recordguiaba.tv.br">
+                </div>
+
+                <h6 class="border-bottom pb-2 mb-3">Relatório Trimestral</h6>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="cfg_enviar_rel" {% if cfg.enviar_relatorio %}checked{% endif %}>
+                    <label class="form-check-label" for="cfg_enviar_rel">Enviar relatório trimestral (Jan, Abr, Jul, Out — dia 1)</label>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Destinatários (separados por vírgula)</label>
+                    <input class="form-control" id="cfg_dest_rel" value="{{ cfg.destinatarios_relatorio|join(', ') }}" placeholder="ti@recordguiaba.tv.br, diretor@recordguiaba.tv.br">
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" onclick="salvarConfig()"><i class="fas fa-save me-1"></i> Salvar</button>
+                    <button class="btn btn-outline-primary" onclick="testarEmail()"><i class="fas fa-paper-plane me-1"></i> Enviar e-mail de teste</button>
+                </div>
+
+                <div id="msgConfig" class="alert mt-3 d-none"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function mostrarMsg(msg, tipo){
+    const el = document.getElementById('msgConfig');
+    el.className = 'alert mt-3 alert-' + (tipo === 'ok' ? 'success' : 'danger');
+    el.textContent = msg;
+    el.classList.remove('d-none');
+    setTimeout(() => el.classList.add('d-none'), 5000);
+}
+
+async function salvarConfig(){
+    const d = {
+        ativo: document.getElementById('cfg_ativo').checked,
+        smtp_host: document.getElementById('cfg_host').value,
+        smtp_port: document.getElementById('cfg_port').value,
+        smtp_user: document.getElementById('cfg_user').value,
+        smtp_pass: document.getElementById('cfg_pass').value,
+        smtp_tls: document.getElementById('cfg_tls').checked,
+        remetente_nome: document.getElementById('cfg_nome').value,
+        destinatarios_ferias: document.getElementById('cfg_dest_ferias').value,
+        destinatarios_relatorio: document.getElementById('cfg_dest_rel').value,
+        enviar_ferias: document.getElementById('cfg_enviar_ferias').checked,
+        enviar_relatorio: document.getElementById('cfg_enviar_rel').checked,
+    };
+    const r = await fetch('/api/configuracoes_email/salvar', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(d)
+    });
+    const j = await r.json();
+    mostrarMsg(j.msg, j.ok ? 'ok' : 'erro');
+    if (j.ok) document.getElementById('cfg_pass').value = '';
+}
+
+async function testarEmail(){
+    const destinatarios = prompt('Para qual e-mail enviar o teste?', document.getElementById('cfg_dest_ferias').value);
+    if (!destinatarios) return;
+    const r = await fetch('/api/configuracoes_email/testar', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({destinatarios})
+    });
+    const j = await r.json();
+    mostrarMsg(j.msg, j.ok ? 'ok' : 'erro');
+}
+</script>
+{% endblock %}

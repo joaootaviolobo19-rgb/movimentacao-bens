@@ -1,0 +1,17 @@
+{
+  "ativo": true,
+  "smtp_host": "smtp.gmail.com",
+  "smtp_port": 587,
+  "smtp_user": "robo443133@gmail.com",
+  "smtp_pass": "gmytqjdmrpcmebvk",
+  "smtp_tls": true,
+  "remetente_nome": "Sistema de Movimentação - TI",
+  "destinatarios_ferias": [
+    "joaootaviolobo18@gmail.com"
+  ],
+  "destinatarios_relatorio": [],
+  "assunto_ferias": "[TI] Alerta: Férias terminam amanhã",
+  "assunto_relatorio": "[TI] Relatório Trimestral de Movimentações",
+  "enviar_ferias": true,
+  "enviar_relatorio": true
+}
