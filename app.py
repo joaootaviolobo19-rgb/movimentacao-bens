@@ -552,6 +552,21 @@ def api_config_email_testar():
     ok, msg = email_sender.enviar_email(destinatarios, "[TI] Teste de configuração", corpo, tipo="teste")
     return jsonify({"ok": ok, "msg": msg})
 
+# ============ CRON EXTERNO (dispara e-mails) ============
+@app.route("/api/rodar_alertas/<token>")
+def api_rodar_alertas(token):
+    # Token secreto — só quem souber consegue rodar
+    TOKEN_SECRETO = "record-ti-2026-movimentacao-secreto"
+    if token != TOKEN_SECRETO:
+        return jsonify({"ok": False, "msg": "Token inválido"}), 403
+
+    try:
+        import enviar_alertas
+        enviar_alertas.main()
+        return jsonify({"ok": True, "msg": "Alertas executados!", "hora": datetime.now().isoformat()})
+    except Exception as e:
+        return jsonify({"ok": False, "msg": f"Erro: {e}"}), 500
+    
 if __name__ == "__main__":
     print("\n" + "=" * 60)
     if CSV_PATH: print("  CSV fonte: " + CSV_PATH)
