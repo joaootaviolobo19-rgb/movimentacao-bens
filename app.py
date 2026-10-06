@@ -15,6 +15,8 @@ ARQ_BENS = os.path.join(DADOS, "bens.json")
 ARQ_FUNC = os.path.join(DADOS, "funcionarios.json")
 ARQ_DEP  = os.path.join(DADOS, "departamentos.json")
 ARQ_MOV  = os.path.join(DADOS, "movimentacoes.csv")
+ARQ_FER  = os.path.join(DADOS, "ferias.json")
+ARQ_PROJ = os.path.join(DADOS, "projetos.json")
 
 DELIMITER = ";"
 BACKUP_DIR = os.path.join(BASE_DIR, "_backup_csv")
@@ -102,6 +104,10 @@ def save_bens(lista):
 def load_funcs(): return _load(ARQ_FUNC, [])
 def load_deps(): return _load(ARQ_DEP, [])
 def save_funcs(d): _save(ARQ_FUNC, d)
+def load_ferias(): return _load(ARQ_FER, [])
+def save_ferias(d): _save(ARQ_FER, d)
+def load_projetos(): return _load(ARQ_PROJ, [])
+def save_projetos(d): _save(ARQ_PROJ, d)
 
 def next_id(lista): return (max([x.get("id", 0) for x in lista]) + 1) if lista else 1
 def normalizar(s): return re.sub(r"\s+", " ", (s or "").strip())
@@ -158,6 +164,29 @@ def _dados_graficos():
         "dep_values": [v for _, v in sorted(por_dep.items(), key=lambda x: -x[1])[:10]],
         "mov_labels": eixo, "mov_values": mov_series,
     }
+
+@app.template_filter("to_date")
+def to_date_filter(s):
+    try:
+        return datetime.strptime(s, "%Y-%m-%d")
+    except Exception:
+        return None
+
+@app.context_processor
+def utility_processor():
+    def progresso_ferias(inicio, fim):
+        try:
+            di = datetime.strptime(inicio, "%Y-%m-%d")
+            df = datetime.strptime(fim, "%Y-%m-%d")
+            hoje = datetime.now()
+            if hoje < di: return 0
+            if hoje > df: return 100
+            total = (df - di).days
+            passado = (hoje - di).days
+            return round((passado / total) * 100) if total else 100
+        except Exception:
+            return 0
+    return dict(progresso_ferias=progresso_ferias)
 
 @app.route("/")
 def dashboard():
@@ -323,6 +352,99 @@ def movimentacoes_exportar():
     if not os.path.exists(ARQ_MOV): return "Sem dados", 404
     return send_file(ARQ_MOV, mimetype="text/csv", as_attachment=True, download_name="movimentacoes.csv")
 
+@app.route("/ferias")
+def ferias_view():
+    ferias = load_ferias()
+    funcs = load_funcs()
+    return render_template("ferias.html", ferias=ferias, funcionarios=funcs)
+
+@app.route("/ferias/salvar", methods=["POST"])
+def ferias_salvar():
+    d = request.json or {}
+    ferias = load_ferias()
+    item = {
+        "nome": normalizar(d.get("nome")),
+        "inicio": normalizar(d.get("inicio")),
+        "fim": normalizar(d.get("fim")),
+        "status": normalizar(d.get("status")) or "Férias não iniciada",
+        "obs": normalizar(d.get("obs")),
+    }
+    if not item["nome"] or not item["inicio"] or not item["fim"]:
+        return jsonify({"ok": False, "msg": "Preencha nome, início e fim."})
+    idx = d.get("idx")
+    if idx is not None and 0 <= idx < len(ferias):
+        ferias[idx] = {**ferias[idx], **item}
+        msg = "Férias atualizadas!"
+    else:
+        ferias.append(item)
+        msg = "Férias cadastradas!"
+    save_ferias(ferias)
+    return jsonify({"ok": True, "msg": msg})
+
+@app.route("/ferias/excluir/<int:idx>", methods=["POST"])
+def ferias_excluir(idx):
+    ferias = load_ferias()
+    if 0 <= idx < len(ferias):
+        ferias.pop(idx)
+        save_ferias(ferias)
+    return jsonify({"ok": True})
+
+@app.route("/ramais")
+def ramais_view():
+    bens = load_bens()
+    mapa = {}
+    for b in bens:
+        ramal = (b.get("ramal") or "").strip()
+        if ramal and ramal not in mapa:
+            mapa[ramal] = {
+                "ramal": ramal,
+                "responsavel": b.get("responsavel", ""),
+                "departamento": b.get("departamento", ""),
+            }
+    ramais = sorted(mapa.values(), key=lambda x: x["ramal"])
+    return render_template("ramais.html", ramais=ramais, total=len(ramais))
+
+@app.route("/projetos")
+def projetos_view():
+    projetos = load_projetos()
+    return render_template("projetos.html", projetos=projetos)
+
+@app.route("/projetos/salvar", methods=["POST"])
+def projetos_salvar():
+    d = request.json or {}
+    projetos = load_projetos()
+    item = {
+        "nome": normalizar(d.get("nome")),
+        "responsavel": normalizar(d.get("responsavel")),
+        "prioridade": normalizar(d.get("prioridade")) or "Média",
+        "progresso": int(d.get("progresso") or 0),
+        "status": normalizar(d.get("status")) or "Em Andamento",
+        "prazo": normalizar(d.get("prazo")),
+    }
+    if not item["nome"]:
+        return jsonify({"ok": False, "msg": "Informe o nome do projeto."})
+    idx = d.get("idx")
+    if idx is not None and 0 <= idx < len(projetos):
+        projetos[idx] = {**projetos[idx], **item}
+        msg = "Projeto atualizado!"
+    else:
+        projetos.append(item)
+        msg = "Projeto cadastrado!"
+    save_projetos(projetos)
+    return jsonify({"ok": True, "msg": msg})
+
+@app.route("/projetos/excluir/<int:idx>", methods=["POST"])
+def projetos_excluir(idx):
+    projetos = load_projetos()
+    if 0 <= idx < len(projetos):
+        projetos.pop(idx)
+        save_projetos(projetos)
+    return jsonify({"ok": True})
+
+@app.route("/ponto")
+def ponto_view():
+    return render_template("ponto.html")
+
 @app.route("/api/csv_info")
 def api_csv_info():
     if not CSV_PATH: return jsonify({"ok": False, "msg": "CSV não encontrado."})
@@ -333,6 +455,51 @@ def api_csv_info():
         tam = round(st.st_size / 1024, 1)
     except Exception: mod, tam = "?", 0
     return jsonify({"ok": True, "caminho": CSV_PATH, "registros": len(bens), "tamanho_kb": tam, "modificado_em": mod})
+@app.route("/api/alertas_ferias")
+def api_alertas_ferias():
+    ferias = load_ferias()
+    hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    alertas_retorno = []
+    alertas_bloqueio = []
+
+    for f in ferias:
+        status = (f.get("status") or "").strip()
+        if status in ("Concluído", "Cancelado"):
+            continue
+
+        try:
+            ini = datetime.strptime(f.get("inicio", ""), "%Y-%m-%d")
+            fim = datetime.strptime(f.get("fim", ""), "%Y-%m-%d")
+        except Exception:
+            continue
+
+        nome = f.get("nome", "—")
+
+        # Alerta de retorno: férias em andamento, faltam <= 7 dias para retornar
+        if status in ("Em Andamento", "Férias iniciada"):
+            dias = (fim - hoje).days
+            if dias <= 7:
+                alertas_retorno.append({
+                    "nome": nome,
+                    "data": fim.strftime("%d/%m/%Y"),
+                    "dias": dias,
+                })
+
+        # Alerta de bloqueio: férias não iniciadas que começam amanhã
+        if status == "Férias não iniciada":
+            dias = (ini - hoje).days
+            if dias == 1:
+                alertas_bloqueio.append({
+                    "nome": nome,
+                    "data": ini.strftime("%d/%m/%Y"),
+                })
+
+    return jsonify({
+        "ok": True,
+        "retorno": alertas_retorno,
+        "bloqueio": alertas_bloqueio,
+        "total": len(alertas_retorno) + len(alertas_bloqueio),
+    })
 
 if __name__ == "__main__":
     print("\n" + "=" * 60)
@@ -340,4 +507,5 @@ if __name__ == "__main__":
     else: print("  AVISO: CSV nao encontrado. Coloque Levantamento*.csv em:\n     " + BASE_DIR + "  ou  " + os.path.dirname(BASE_DIR))
     print("=" * 60)
     print("\n  Servidor rodando em: http://localhost:5000\n")
-    app.run(debug=False, host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=False, host="0.0.0.0", port=port)

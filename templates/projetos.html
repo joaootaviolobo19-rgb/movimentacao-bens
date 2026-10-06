@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Projetos{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="text-muted small"><strong class="text-dark">{{projetos|length}}</strong> projeto(s)</div>
+    <button class="btn btn-success btn-sm" onclick="novoProj()">
+        <i class="bi bi-plus-lg me-1"></i> Novo Projeto
+    </button>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Responsável</th>
+                    <th>Prioridade</th>
+                    <th>Progresso</th>
+                    <th>Status</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in projetos %}
+                <tr>
+                    <td class="fw-semibold">{{p.nome}}</td>
+                    <td class="small">{{p.responsavel or '—'}}</td>
+                    <td>
+                        {% set pr = (p.prioridade or '')|lower %}
+                        {% if 'urgente' in pr %}<span class="badge bg-danger">{{p.prioridade}}</span>
+                        {% elif 'alta' in pr %}<span class="badge bg-warning text-dark">{{p.prioridade}}</span>
+                        {% elif 'baixa' in pr %}<span class="badge bg-secondary">{{p.prioridade}}</span>
+                        {% else %}<span class="badge bg-info text-dark">{{p.prioridade}}</span>{% endif %}
+                    </td>
+                    <td style="min-width:140px">
+                        <div class="progress" style="height:8px">
+                            <div class="progress-bar bg-primary" style="width:{{p.progresso}}%"></div>
+                        </div>
+                        <small class="text-muted">{{p.progresso}}%</small>
+                    </td>
+                    <td>
+                        {% set s = (p.status or '')|lower %}
+                        {% if 'conclu' in s %}<span class="badge bg-success">{{p.status}}</span>
+                        {% elif 'cancel' in s %}<span class="badge bg-danger">{{p.status}}</span>
+                        {% elif 'pausa' in s %}<span class="badge bg-warning text-dark">{{p.status}}</span>
+                        {% else %}<span class="badge bg-primary">{{p.status}}</span>{% endif %}
+                    </td>
+                    <td class="text-end text-nowrap">
+                        <button class="btn btn-outline-primary btn-sm" onclick='editarProj({{loop.index0}}, {{p|tojson}})'>
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" onclick="excluirProj({{loop.index0}})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-5">
+                    <i class="bi bi-clipboard fs-1 d-block mb-2 opacity-50"></i>
+                    Nenhum projeto cadastrado.
+                </td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalProj" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="bi bi-clipboard-check me-2"></i><span id="tituloProj">Novo Projeto</span></h5>
+                <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="proj_idx">
+                <div class="mb-3"><label class="form-label">Nome</label><input id="proj_nome" class="form-control"></div>
+                <div class="mb-3"><label class="form-label">Responsável</label><input id="proj_responsavel" class="form-control"></div>
+                <div class="row g-2 mb-3">
+                    <div class="col"><label class="form-label">Prioridade</label>
+                        <select id="proj_prioridade" class="form-select">
+                            <option>Baixa</option><option selected>Média</option><option>Alta</option><option>Urgente</option>
+                        </select>
+                    </div>
+                    <div class="col"><label class="form-label">Status</label>
+                        <select id="proj_status" class="form-select">
+                            <option>Planejamento</option><option selected>Em Andamento</option>
+                            <option>Pausado</option><option>Concluído</option><option>Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3"><label class="form-label">Progresso (%)</label>
+                    <input id="proj_progresso" type="range" min="0" max="100" value="0" class="form-range" oninput="document.getElementById('proj_prog_val').textContent=this.value+'%'">
+                    <div class="text-end small text-muted" id="proj_prog_val">0%</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" onclick="salvarProj()"><i class="bi bi-check-lg me-1"></i> Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function novoProj(){
+    document.getElementById('tituloProj').textContent = 'Novo Projeto';
+    document.getElementById('proj_idx').value = '';
+    ['nome','responsavel'].forEach(c => document.getElementById('proj_'+c).value = '');
+    document.getElementById('proj_prioridade').value = 'Média';
+    document.getElementById('proj_status').value = 'Em Andamento';
+    document.getElementById('proj_progresso').value = 0;
+    document.getElementById('proj_prog_val').textContent = '0%';
+    new bootstrap.Modal(document.getElementById('modalProj')).show();
+}
+function editarProj(idx, p){
+    document.getElementById('tituloProj').textContent = 'Editar Projeto';
+    document.getElementById('proj_idx').value = idx;
+    document.getElementById('proj_nome').value = p.nome || '';
+    document.getElementById('proj_responsavel').value = p.responsavel || '';
+    document.getElementById('proj_prioridade').value = p.prioridade || 'Média';
+    document.getElementById('proj_status').value = p.status || 'Em Andamento';
+    document.getElementById('proj_progresso').value = p.progresso || 0;
+    document.getElementById('proj_prog_val').textContent = (p.progresso || 0) + '%';
+    new bootstrap.Modal(document.getElementById('modalProj')).show();
+}
+async function salvarProj(){
+    const idx = document.getElementById('proj_idx').value;
+    const d = {
+        idx: idx === '' ? null : parseInt(idx),
+        nome: document.getElementById('proj_nome').value,
+        responsavel: document.getElementById('proj_responsavel').value,
+        prioridade: document.getElementById('proj_prioridade').value,
+        status: document.getElementById('proj_status').value,
+        progresso: document.getElementById('proj_progresso').value
+    };
+    const r = await fetch('/projetos/salvar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)});
+    const j = await r.json();
+    if (j.ok) location.reload(); else alert(j.msg);
+}
+async function excluirProj(idx){
+    if (!confirm('Excluir este projeto?')) return;
+    await fetch('/projetos/excluir/'+idx, {method:'POST'});
+    location.reload();
+}
+</script>
+{% endblock %}
