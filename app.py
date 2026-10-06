@@ -30,7 +30,12 @@ ROTAS_RECEPCAO = {
 
 @app.before_request
 def verificar_acesso():
+    # Rotas livres (sem login)
     if request.path.startswith("/static") or request.path in ("/login", "/logout"):
+        return None
+
+    # Rota do cron — protegida por token na URL, não precisa de sessão
+    if request.path.startswith("/api/rodar_alertas/"):
         return None
 
     if "usuario" not in session:
