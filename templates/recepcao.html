@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}Recepção - Record{% endblock %}
+{% block page_title %}Recepção{% endblock %}
+
+{% block styles %}
+<style>
+    .abas {
+        display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap;
+    }
+    .aba {
+        padding: 0.6rem 1.1rem; border-radius: 10px;
+        border: 1px solid #e2e8f0; background: #fff; cursor: pointer;
+        font-weight: 600; font-size: 0.9rem; color: #475569;
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        transition: 0.15s;
+    }
+    .aba:hover { background: #f8fafc; }
+    .aba.active { background: #1a2a4a; color: white; border-color: #1a2a4a; }
+    .aba .badge-cont {
+        background: rgba(0,0,0,0.08); padding: 2px 8px;
+        border-radius: 12px; font-size: 0.78rem;
+    }
+    .aba.active .badge-cont { background: rgba(255,255,255,0.2); }
+
+    .busca { position: relative; max-width: 420px; width: 100%; margin-bottom: 1.25rem; }
+    .busca input {
+        width: 100%; padding: 0.7rem 1rem 0.7rem 2.5rem;
+        border: 1px solid #e2e8f0; border-radius: 10px;
+        font-size: 0.95rem; background: #fff;
+    }
+    .busca input:focus {
+        outline: none; border-color: #1a2a4a;
+        box-shadow: 0 0 0 3px rgba(26,42,74,0.08);
+    }
+    .busca i {
+        position: absolute; left: 0.9rem; top: 50%;
+        transform: translateY(-50%); color: #94a3b8; font-size: 0.95rem;
+    }
+
+    .tabela-card {
+        background: #fff; border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;
+    }
+    .tabela-card table {
+        width: 100%; border-collapse: collapse; font-size: 0.92rem;
+    }
+    .tabela-card thead th {
+        background: #f8fafc; color: #475569; font-weight: 600;
+        font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.3px;
+        padding: 14px 20px; text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .tabela-card tbody td {
+        padding: 14px 20px; border-bottom: 1px solid #f1f5f9;
+        color: #334155; vertical-align: middle;
+    }
+    .tabela-card tbody tr:last-child td { border-bottom: none; }
+    .tabela-card tbody tr:hover { background: #fafbfc; }
+    .tabela-card tbody tr.ferias { background: #f0fdf4; }
+    .tabela-card tbody tr.ferias:hover { background: #dcfce7; }
+
+    .nome { font-weight: 600; color: #1a2a4a; }
+    .ramal {
+        display: inline-block; background: #eff6ff; color: #1d4ed8;
+        padding: 3px 10px; border-radius: 6px;
+        font-weight: 600; font-size: 0.85rem;
+    }
+    .sem-ramal { color: #cbd5e1; font-size: 0.85rem; }
+    .obs { color: #64748b; font-size: 0.85rem; }
+
+    .bolinha {
+        display: inline-block; width: 10px; height: 10px;
+        border-radius: 50%; border: 2px solid #cbd5e1; background: transparent;
+    }
+    .bolinha.ativa { border-color: #16a34a; background: #16a34a; }
+
+    .barra-prog {
+        width: 100px; height: 6px; background: #e2e8f0;
+        border-radius: 3px; overflow: hidden;
+        display: inline-block; vertical-align: middle; margin-right: 8px;
+    }
+    .barra-prog > div {
+        height: 100%; background: linear-gradient(to right, #3b82f6, #1d4ed8);
+    }
+
+    .dias-restantes {
+        display: inline-block; padding: 3px 10px; border-radius: 6px;
+        font-size: 0.78rem; font-weight: 700;
+        background: #eff6ff; color: #1d4ed8;
+    }
+    .dias-restantes.urgente { background: #fee2e2; color: #991b1b; }
+    .dias-restantes.hoje    { background: #fee2e2; color: #991b1b; }
+    .dias-restantes.proximo { background: #fef3c7; color: #92400e; }
+
+    .vazio { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
+    .vazio i { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; opacity: 0.4; }
+
+    .topo {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;
+    }
+    .topo h5 { margin: 0; font-weight: 700; color: #1a2a4a; }
+    .info-ferias {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        font-size: 0.85rem; color: #64748b;
+    }
+    .pulso {
+        display: inline-block; width: 8px; height: 8px;
+        border-radius: 50%; background: #16a34a;
+        animation: pulso 1.5s infinite;
+    }
+    @keyframes pulso { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ABAS -->
+<div class="abas">
+    <button class="aba active" data-aba="colab" type="button">
+        <i class="fas fa-users"></i>
+        Colaboradores
+        <span class="badge-cont">{{ total }}</span>
+    </button>
+    <button class="aba" data-aba="ferias" type="button">
+        <i class="fas fa-umbrella-beach"></i>
+        Em férias
+        <span class="badge-cont">{{ total_ferias }}</span>
+    </button>
+</div>
+
+<!-- ============ ABA COLABORADORES ============ -->
+<div class="painel" id="painel-colab">
+    <div class="busca">
+        <i class="fas fa-search"></i>
+        <input type="text" id="buscaInput"
+               placeholder="Buscar por nome, cargo, departamento ou ramal..."
+               autocomplete="off" autofocus>
+    </div>
+
+    <div class="tabela-card">
+        <table id="tabelaRecepcao">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Cargo</th>
+                    <th>Departamento</th>
+                    <th>Ramal</th>
+                    <th style="width:70px; text-align:center;">Férias</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in registros %}
+                <tr class="linha-item {% if r.em_ferias %}ferias{% endif %}"
+                    data-busca="{{ r.busca|lower }}">
+                    <td class="nome">{{ r.nome }}</td>
+                    <td>{{ r.cargo or '—' }}</td>
+                    <td>{{ r.departamento or '—' }}</td>
+                    <td>
+                        {% if r.ramal %}
+                            <span class="ramal"><i class="fas fa-phone" style="font-size:0.7rem;"></i> {{ r.ramal }}</span>
+                        {% else %}
+                            <span class="sem-ramal">Sem ramal</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        <span class="bolinha {% if r.em_ferias %}ativa{% endif %}"
+                              title="{% if r.em_ferias %}Em férias{% else %}Disponível{% endif %}"></span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div id="vazioBusca" class="vazio" style="display:none;">
+            Nenhum resultado encontrado.
+        </div>
+
+        {% if not registros %}
+        <div class="vazio">Nenhum colaborador cadastrado.</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ============ ABA FÉRIAS ============ -->
+<div class="painel" id="painel-ferias" style="display:none;">
+    <div class="topo">
+        <h5>Colaboradores em férias</h5>
+        {% if ferias_ativas %}
+        <span class="info-ferias">
+            <span class="pulso"></span>
+            {{ total_ferias }} colaborador(es) agora
+        </span>
+        {% endif %}
+    </div>
+
+    <div class="tabela-card">
+        {% if ferias_ativas %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Início</th>
+                    <th>Fim</th>
+                    <th>Progresso</th>
+                    <th style="width:150px;">Retorno</th>
+                    <th>Observação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in ferias_ativas %}
+                <tr>
+                    <td class="nome">{{ f.nome }}</td>
+                    <td>{{ f.inicio }}</td>
+                    <td>{{ f.fim }}</td>
+                    <td>
+                        <span class="barra-prog">
+                            <div style="width: {{ f.progresso }}%;"></div>
+                        </span>
+                        <small class="text-muted">{{ f.progresso }}%</small>
+                    </td>
+                    <td>
+                        {% if f.dias_restantes <= 0 %}
+                            <span class="dias-restantes hoje">HOJE</span>
+                        {% elif f.dias_restantes <= 3 %}
+                            <span class="dias-restantes urgente">{{ f.dias_restantes }}d</span>
+                        {% elif f.dias_restantes <= 7 %}
+                            <span class="dias-restantes proximo">{{ f.dias_restantes }}d</span>
+                        {% else %}
+                            <span class="dias-restantes">{{ f.dias_restantes }}d</span>
+                        {% endif %}
+                    </td>
+                    <td class="obs">{{ f.obs or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="vazio">
+            <i class="fas fa-umbrella-beach"></i>
+            Nenhum colaborador em férias agora.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // ===== ABAS =====
+    document.querySelectorAll('.aba').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.aba').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.painel').forEach(p => p.style.display = 'none');
+            const p = document.getElementById('painel-' + btn.dataset.aba);
+            if (p) p.style.display = '';
+        });
+    });
+
+    // ===== BUSCA (só na aba Colaboradores) =====
+    const input = document.getElementById('buscaInput');
+    const linhas = document.querySelectorAll('.linha-item');
+    const vazio = document.getElementById('vazioBusca');
+
+    input?.addEventListener('input', function() {
+        const q = this.value.trim().toLowerCase();
+        let visiveis = 0;
+        linhas.forEach(el => {
+            const ok = !q || el.dataset.busca.includes(q);
+            el.style.display = ok ? '' : 'none';
+            if (ok) visiveis++;
+        });
+        vazio.style.display = (visiveis === 0 && linhas.length > 0) ? 'block' : 'none';
+    });
+
+    input?.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { input.value = ''; input.dispatchEvent(new Event('input')); }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,14 @@
+[
+  {
+    "usuario": "admin",
+    "senha_hash": "a2fdef4a7899504d66a3e29a9743626a0f704e54a256888763cb0f4248ba8f21",
+    "nome": "Administrador TI",
+    "tipo": "admin"
+  },
+  {
+    "usuario": "recepcao",
+    "senha_hash": "2b2f7d1f89222d7211f2befb172fa7267c44ef66f9e074a7902dc39ce7c829a2",
+    "nome": "Recepção",
+    "tipo": "recepcao"
+  }
+]

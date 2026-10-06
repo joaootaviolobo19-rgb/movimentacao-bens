@@ -1,143 +1,462 @@
 {% extends "base.html" %}
-{% block title %}Férias{% endblock %}
+
+{% block title %}Férias - Record{% endblock %}
+{% block page_title %}Férias{% endblock %}
+
+{% block styles %}
+<style>
+    .abas { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .aba {
+        padding: 0.6rem 1.1rem; border-radius: 10px;
+        border: 1px solid #e2e8f0; background: #fff; cursor: pointer;
+        font-weight: 600; font-size: 0.9rem; color: #475569;
+        display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .aba:hover { background: #f8fafc; }
+    .aba.active { background: #1a2a4a; color: white; border-color: #1a2a4a; }
+    .aba .badge-cont {
+        background: rgba(0,0,0,0.08); padding: 2px 8px;
+        border-radius: 12px; font-size: 0.78rem;
+    }
+    .aba.active .badge-cont { background: rgba(255,255,255,0.2); }
+
+    .tabela-card {
+        background: #fff; border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;
+    }
+    .tabela-card table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    .tabela-card thead th {
+        background: #f8fafc; color: #475569; font-weight: 600;
+        font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.3px;
+        padding: 14px 20px; text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .tabela-card tbody td {
+        padding: 14px 20px; border-bottom: 1px solid #f1f5f9;
+        color: #334155; vertical-align: middle;
+    }
+    .tabela-card tbody tr:last-child td { border-bottom: none; }
+    .tabela-card tbody tr:hover { background: #fafbfc; }
+
+    .nome { font-weight: 600; color: #1a2a4a; }
+    .obs { color: #64748b; font-size: 0.85rem; }
+
+    .badge-status {
+        display: inline-block; padding: 3px 10px; border-radius: 6px;
+        font-size: 0.78rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .st-encerrada { background: #f1f5f9; color: #475569; }
+    .st-concluido { background: #f1f5f9; color: #475569; }
+    .st-cancelado { background: #fee2e2; color: #991b1b; }
+
+    .barra-prog {
+        width: 100px; height: 6px; background: #e2e8f0;
+        border-radius: 3px; overflow: hidden;
+        display: inline-block; vertical-align: middle; margin-right: 8px;
+    }
+    .barra-prog > div { height: 100%; background: linear-gradient(to right, #3b82f6, #1d4ed8); }
+    .barra-prog.completa > div { background: #16a34a; }
+
+    .dias-restantes {
+        display: inline-block; padding: 3px 10px; border-radius: 6px;
+        font-size: 0.78rem; font-weight: 700;
+        background: #eff6ff; color: #1d4ed8;
+    }
+    .dias-restantes.urgente { background: #fee2e2; color: #991b1b; }
+    .dias-restantes.hoje    { background: #fee2e2; color: #991b1b; }
+    .dias-restantes.proximo { background: #fef3c7; color: #92400e; }
+
+    .vazio { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
+    .vazio i { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; opacity: 0.4; }
+
+    .contador-topo {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        font-size: 0.85rem; color: #64748b;
+    }
+    .pulso {
+        display: inline-block; width: 8px; height: 8px;
+        border-radius: 50%; background: #16a34a;
+        animation: pulso 1.5s infinite;
+    }
+    @keyframes pulso { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .btn-acao {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 32px; height: 32px; border-radius: 6px;
+        border: 1px solid #e2e8f0; background: #fff;
+        color: #475569; cursor: pointer; margin: 0 2px;
+    }
+    .btn-acao:hover { background: #f1f5f9; }
+    .btn-acao.excluir:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+
+    .topo-ferias {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="text-muted small"><strong class="text-dark">{{ferias|length}}</strong> registro(s) de férias</div>
-    <button class="btn btn-success btn-sm" onclick="novaFerias()">
-        <i class="bi bi-plus-lg me-1"></i> Nova Solicitação
+{% set is_admin = session.get('tipo') == 'admin' %}
+
+<div class="topo-ferias">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        <h5 class="m-0 fw-bold" style="color:#1a2a4a;">Controle de Férias</h5>
+        {% if em_andamento %}
+        <span class="contador-topo">
+            <span class="pulso"></span>
+            {{ em_andamento|length }} colaborador(es) em férias agora
+        </span>
+        {% endif %}
+    </div>
+
+    {% if is_admin %}
+    <button class="btn btn-primary" id="btnNovaFerias" type="button">
+        <i class="fas fa-plus me-1"></i> Nova Férias
     </button>
+    {% endif %}
 </div>
 
-<div class="card">
-    <div class="table-responsive">
-        <table class="table mb-0">
+{% if is_admin %}
+<div class="abas">
+    <button class="aba active" data-aba="andamento" type="button">
+        <i class="fas fa-umbrella-beach"></i>
+        Em férias agora
+        <span class="badge-cont">{{ em_andamento|length }}</span>
+    </button>
+    <button class="aba" data-aba="futuras" type="button">
+        <i class="fas fa-calendar-plus"></i>
+        Próximas
+        <span class="badge-cont">{{ futuras|length }}</span>
+    </button>
+    <button class="aba" data-aba="encerradas" type="button">
+        <i class="fas fa-check-circle"></i>
+        Encerradas
+        <span class="badge-cont">{{ encerradas|length }}</span>
+    </button>
+</div>
+{% endif %}
+
+<div class="tabela-card">
+    <!-- EM ANDAMENTO -->
+    <div class="painel" id="painel-andamento">
+        {% if em_andamento %}
+        <table>
             <thead>
                 <tr>
-                    <th>Colaborador</th>
+                    <th>Nome</th>
                     <th>Início</th>
-                    <th>Término</th>
-                    <th>Dias</th>
+                    <th>Fim</th>
                     <th>Progresso</th>
-                    <th>Status</th>
-                    <th class="text-end">Ações</th>
+                    <th style="width:150px;">Retorno</th>
+                    <th>Observação</th>
+                    {% if is_admin %}<th style="width:110px; text-align:center;">Ações</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
-            {% for f in ferias %}
+                {% for f in em_andamento %}
                 <tr>
-                    <td class="fw-semibold">{{f.nome}}</td>
-                    <td class="small">{{f.inicio}}</td>
-                    <td class="small">{{f.fim}}</td>
-                    <td class="small">{{ ((f.fim|to_date) - (f.inicio|to_date)).days + 1 if f.inicio and f.fim else '—' }}</td>
-                    <td style="min-width:140px">
-                        {% set p = progresso_ferias(f.inicio, f.fim) %}
-                        <div class="progress" style="height:8px">
-                            <div class="progress-bar bg-gradient" style="width:{{p}}%"></div>
-                        </div>
-                        <small class="text-muted">{{p}}%</small>
+                    <td class="nome">{{ f.nome }}</td>
+                    <td>{{ f.inicio.split('-')|reverse|join('/') }}</td>
+                    <td>{{ f.fim.split('-')|reverse|join('/') }}</td>
+                    <td>
+                        <span class="barra-prog {% if f.progresso >= 100 %}completa{% endif %}">
+                            <div style="width: {{ f.progresso }}%;"></div>
+                        </span>
+                        <small class="text-muted">{{ f.progresso }}%</small>
                     </td>
                     <td>
-                        {% set s = (f.status or '')|lower %}
-                        {% if 'conclu' in s %}<span class="badge bg-success">{{f.status}}</span>
-                        {% elif 'cancel' in s %}<span class="badge bg-danger">{{f.status}}</span>
-                        {% elif 'andamento' in s %}<span class="badge bg-primary">{{f.status}}</span>
-                        {% else %}<span class="badge bg-warning text-dark">{{f.status}}</span>{% endif %}
+                        {% if f.dias_restantes is not none %}
+                            {% if f.dias_restantes <= 0 %}
+                                <span class="dias-restantes hoje">HOJE</span>
+                            {% elif f.dias_restantes <= 3 %}
+                                <span class="dias-restantes urgente">{{ f.dias_restantes }}d</span>
+                            {% elif f.dias_restantes <= 7 %}
+                                <span class="dias-restantes proximo">{{ f.dias_restantes }}d</span>
+                            {% else %}
+                                <span class="dias-restantes">{{ f.dias_restantes }}d</span>
+                            {% endif %}
+                        {% else %}—{% endif %}
                     </td>
-                    <td class="text-end text-nowrap">
-                        <button class="btn btn-outline-primary btn-sm" onclick='editarFerias({{loop.index0}}, {{f|tojson}})'>
-                            <i class="bi bi-pencil"></i>
+                    <td class="obs">{{ f.obs or '—' }}</td>
+                    {% if is_admin %}
+                    <td style="text-align:center; white-space:nowrap;">
+                        <button class="btn-acao" type="button" title="Editar"
+                                onclick="editarFerias({{ f.idx }})">
+                            <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-outline-primary btn-sm" onclick="excluirFerias({{loop.index0}})">
-                            <i class="bi bi-trash"></i>
+                        <button class="btn-acao excluir" type="button" title="Excluir"
+                                onclick="excluirFerias({{ f.idx }})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="vazio">
+            <i class="fas fa-umbrella-beach"></i>
+            Nenhum colaborador em férias agora.
+        </div>
+        {% endif %}
+    </div>
+
+    {% if is_admin %}
+    <!-- FUTURAS -->
+    <div class="painel" id="painel-futuras" style="display:none;">
+        {% if futuras %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Início</th>
+                    <th>Fim</th>
+                    <th>Observação</th>
+                    <th style="width:110px; text-align:center;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in futuras %}
+                <tr>
+                    <td class="nome">{{ f.nome }}</td>
+                    <td>{{ f.inicio.split('-')|reverse|join('/') }}</td>
+                    <td>{{ f.fim.split('-')|reverse|join('/') }}</td>
+                    <td class="obs">{{ f.obs or '—' }}</td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <button class="btn-acao" type="button" title="Editar"
+                                onclick="editarFerias({{ f.idx }})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-acao excluir" type="button" title="Excluir"
+                                onclick="excluirFerias({{ f.idx }})">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 </tr>
-            {% else %}
-                <tr><td colspan="7" class="text-center text-muted py-5">
-                    <i class="bi bi-umbrella fs-1 d-block mb-2 opacity-50"></i>
-                    Nenhuma solicitação de férias registrada.
-                </td></tr>
-            {% endfor %}
+                {% endfor %}
             </tbody>
         </table>
+        {% else %}
+        <div class="vazio"><i class="fas fa-calendar-plus"></i>Nenhuma férias agendada.</div>
+        {% endif %}
     </div>
+
+    <!-- ENCERRADAS -->
+    <div class="painel" id="painel-encerradas" style="display:none;">
+        {% if encerradas %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Início</th>
+                    <th>Fim</th>
+                    <th>Status</th>
+                    <th>Observação</th>
+                    <th style="width:110px; text-align:center;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in encerradas %}
+                <tr>
+                    <td class="nome">{{ f.nome }}</td>
+                    <td>{{ f.inicio.split('-')|reverse|join('/') }}</td>
+                    <td>{{ f.fim.split('-')|reverse|join('/') }}</td>
+                    <td>
+                        <span class="badge-status
+                            {% if f.status == 'Concluído' %}st-concluido
+                            {% elif f.status == 'Cancelado' %}st-cancelado
+                            {% else %}st-encerrada{% endif %}">
+                            {{ f.status }}
+                        </span>
+                    </td>
+                    <td class="obs">{{ f.obs or '—' }}</td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <button class="btn-acao excluir" type="button" title="Excluir"
+                                onclick="excluirFerias({{ f.idx }})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="vazio"><i class="fas fa-check-circle"></i>Nenhuma férias encerrada.</div>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
-<div class="modal fade" id="modalFer" tabindex="-1">
+{% if is_admin %}
+<!-- MODAL NOVA/EDITAR -->
+<div class="modal fade" id="modalFerias" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title"><i class="bi bi-umbrella-beach me-2"></i><span id="tituloFer">Nova Solicitação</span></h5>
+            <div class="modal-header" style="background:#1a2a4a; color:white;">
+                <h5 class="modal-title">
+                    <i class="fas fa-umbrella-beach me-2"></i>
+                    <span id="tituloModalFerias">Nova Férias</span>
+                </h5>
                 <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="hidden" id="fer_idx">
+                <div id="alertaFerias" class="alert" style="display:none;"></div>
                 <div class="mb-3">
-                    <label class="form-label">Colaborador</label>
-                    <input id="fer_nome" class="form-control" list="listaFuncs" placeholder="Nome...">
-                    <datalist id="listaFuncs">{% for f in funcionarios %}<option value="{{f.nome}}">{% endfor %}</datalist>
+                    <label class="form-label fw-semibold">Colaborador</label>
+                    <input type="text" class="form-control" id="feriasNome"
+                           list="listaFuncionarios" autocomplete="off">
+                    <datalist id="listaFuncionarios">
+                        {% for f in funcionarios %}
+                        <option value="{{ f.nome }}">
+                        {% endfor %}
+                    </datalist>
                 </div>
-                <div class="row g-2 mb-3">
-                    <div class="col"><label class="form-label">Início</label><input id="fer_inicio" type="date" class="form-control"></div>
-                    <div class="col"><label class="form-label">Término</label><input id="fer_fim" type="date" class="form-control"></div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Início</label>
+                        <input type="date" class="form-control" id="feriasInicio">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Fim</label>
+                        <input type="date" class="form-control" id="feriasFim">
+                    </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Status</label>
-                    <select id="fer_status" class="form-select">
-                        <option value="Férias não iniciada">Férias não iniciada</option>
-                        <option value="Em Andamento">Em Andamento</option>
-                        <option value="Férias iniciada">Férias iniciada</option>
-                        <option value="Concluído">Concluído</option>
-                        <option value="Cancelado">Cancelado</option>
-                    </select>
+                    <label class="form-label fw-semibold">Observação</label>
+                    <textarea class="form-control" id="feriasObs" rows="2"></textarea>
                 </div>
+                <input type="hidden" id="feriasIdx">
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</button>
-                <button class="btn btn-success" onclick="salvarFerias()"><i class="bi bi-check-lg me-1"></i> Salvar</button>
+                <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" type="button" id="btnSalvarFerias">
+                    <i class="fas fa-save me-1"></i> Salvar
+                </button>
             </div>
         </div>
     </div>
 </div>
+{% endif %}
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-function novaFerias(){
-    document.getElementById('tituloFer').textContent = 'Nova Solicitação';
-    document.getElementById('fer_idx').value = '';
-    ['nome','inicio','fim'].forEach(c => document.getElementById('fer_'+c).value = '');
-    document.getElementById('fer_status').value = 'Férias não iniciada';
-    new bootstrap.Modal(document.getElementById('modalFer')).show();
-}
-function editarFerias(idx, f){
-    document.getElementById('tituloFer').textContent = 'Editar Férias';
-    document.getElementById('fer_idx').value = idx;
-    document.getElementById('fer_nome').value = f.nome || '';
-    document.getElementById('fer_inicio').value = f.inicio || '';
-    document.getElementById('fer_fim').value = f.fim || '';
-    document.getElementById('fer_status').value = f.status || 'Férias não iniciada';
-    new bootstrap.Modal(document.getElementById('modalFer')).show();
-}
-async function salvarFerias(){
-    const idx = document.getElementById('fer_idx').value;
-    const d = {
-        idx: idx === '' ? null : parseInt(idx),
-        nome: document.getElementById('fer_nome').value,
-        inicio: document.getElementById('fer_inicio').value,
-        fim: document.getElementById('fer_fim').value,
-        status: document.getElementById('fer_status').value
+    // ===== ABAS =====
+    document.querySelectorAll('.aba').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.aba').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.painel').forEach(p => p.style.display = 'none');
+            const painel = document.getElementById('painel-' + btn.dataset.aba);
+            if (painel) painel.style.display = '';
+        });
+    });
+
+    {% if session.get('tipo') == 'admin' %}
+    // ===== DADOS =====
+    const FERIAS = {{ todas|tojson }};
+    let modalFerias;
+
+    function abrirModal() {
+        if (!modalFerias) {
+            modalFerias = new bootstrap.Modal(document.getElementById('modalFerias'));
+        }
+        modalFerias.show();
+    }
+
+    // ===== NOVA =====
+    document.getElementById('btnNovaFerias').addEventListener('click', function() {
+        document.getElementById('tituloModalFerias').textContent = 'Nova Férias';
+        document.getElementById('feriasIdx').value = '';
+        document.getElementById('feriasNome').value = '';
+        document.getElementById('feriasInicio').value = '';
+        document.getElementById('feriasFim').value = '';
+        document.getElementById('feriasObs').value = '';
+        document.getElementById('alertaFerias').style.display = 'none';
+        abrirModal();
+    });
+
+    // ===== EDITAR =====
+    window.editarFerias = function(idx) {
+        const f = FERIAS.find(x => x.idx === idx);
+        if (!f) { alert('Registro não encontrado.'); return; }
+        document.getElementById('tituloModalFerias').textContent = 'Editar Férias';
+        document.getElementById('feriasIdx').value = idx;
+        document.getElementById('feriasNome').value = f.nome || '';
+        document.getElementById('feriasInicio').value = f.inicio || '';
+        document.getElementById('feriasFim').value = f.fim || '';
+        document.getElementById('feriasObs').value = f.obs || '';
+        document.getElementById('alertaFerias').style.display = 'none';
+        abrirModal();
     };
-    const r = await fetch('/ferias/salvar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)});
-    const j = await r.json();
-    if (j.ok) location.reload(); else alert(j.msg);
-}
-async function excluirFerias(idx){
-    if (!confirm('Excluir este registro?')) return;
-    await fetch('/ferias/excluir/'+idx, {method:'POST'});
-    location.reload();
-}
+
+    // ===== EXCLUIR =====
+    window.excluirFerias = async function(idx) {
+        if (!confirm('Excluir esta férias?')) return;
+        try {
+            const r = await fetch('/ferias/excluir/' + idx, { method: 'POST' });
+            const j = await r.json();
+            if (j.ok) location.reload();
+            else alert('Erro: ' + (j.msg || 'falha ao excluir'));
+        } catch (e) { alert('Erro de conexão.'); }
+    };
+
+    // ===== SALVAR =====
+    document.getElementById('btnSalvarFerias').addEventListener('click', async function() {
+        const alerta = document.getElementById('alertaFerias');
+        const idx = document.getElementById('feriasIdx').value;
+        const nome = document.getElementById('feriasNome').value.trim();
+        const inicio = document.getElementById('feriasInicio').value;
+        const fim = document.getElementById('feriasFim').value;
+        const obs = document.getElementById('feriasObs').value.trim();
+
+        alerta.style.display = 'none';
+        if (!nome || !inicio || !fim) {
+            alerta.className = 'alert alert-danger';
+            alerta.textContent = 'Preencha nome, início e fim.';
+            alerta.style.display = 'block';
+            return;
+        }
+
+        const btn = this;
+        const orig = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Salvando...';
+
+        try {
+            const r = await fetch('/ferias/salvar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    idx: idx === '' ? null : parseInt(idx),
+                    nome: nome, inicio: inicio, fim: fim, obs: obs,
+                })
+            });
+            const j = await r.json();
+            if (j.ok) {
+                alerta.className = 'alert alert-success';
+                alerta.textContent = '✅ ' + j.msg;
+                alerta.style.display = 'block';
+                setTimeout(() => location.reload(), 800);
+            } else {
+                alerta.className = 'alert alert-danger';
+                alerta.textContent = '❌ ' + j.msg;
+                alerta.style.display = 'block';
+            }
+        } catch (e) {
+            alerta.className = 'alert alert-danger';
+            alerta.textContent = '❌ Erro de conexão.';
+            alerta.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+        }
+    });
+    {% endif %}
 </script>
 {% endblock %}

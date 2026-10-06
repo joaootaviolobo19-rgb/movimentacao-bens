@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -77,7 +76,6 @@
         .table td { padding: 12px 15px; vertical-align: middle; font-size: 0.9rem; text-align: left; }
         .table-hover tbody tr:hover { background-color: rgba(13, 110, 253, 0.05); }
 
-        /* Classes personalizadas usadas nos templates */
         .metric-card { border-left: 4px solid #cbd5e1; }
         .metric-card.metric-primary { border-left-color: #1a2a4a; }
         .metric-card.metric-success { border-left-color: #059669; }
@@ -102,6 +100,9 @@
         .badge.bg-success-subtle { background-color: rgba(25, 135, 84, 0.12) !important; color: #0f5132 !important; }
         .badge.bg-warning-subtle { background-color: rgba(255, 193, 7, 0.15) !important; color: #664d03 !important; }
 
+        .btn-icon { background:none; border:none; font-size:1.2rem; cursor:pointer; position:relative; color:#2d3748; padding: 4px 6px; }
+        .btn-icon:hover { color: #1a2a4a; transform: scale(1.1); transition: 0.2s; }
+
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.open { transform: translateX(0); }
@@ -117,18 +118,27 @@
                 <img src="{{ url_for('static', filename='lateral.png') }}" alt="Record Logo">
             </div>
             <ul class="sidebar-menu">
-                <li><a href="/configuracoes" class="{% if request.path.startswith('/configuracoes') %}active{% endif %}"><i class="fas fa-cog"></i> <span>Configurações</span></a></li>
-                <li><a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-chart-bar"></i> <span>Dashboard</span></a></li>
-                <li><a href="/bens" class="{% if request.path.startswith('/bens') %}active{% endif %}"><i class="fas fa-laptop"></i> <span>Bens</span></a></li>
-                <li><a href="/planilha" class="{% if request.path.startswith('/planilha') %}active{% endif %}"><i class="fas fa-table"></i> <span>Planilha</span></a></li>
-                <li><a href="/funcionarios" class="{% if request.path.startswith('/funcionarios') %}active{% endif %}"><i class="fas fa-users"></i> <span>Funcionários</span></a></li>
-                <li><a href="/teia" class="{% if request.path.startswith('/teia') %}active{% endif %}"><i class="fas fa-project-diagram"></i> <span>Teia</span></a></li>
-                <li><a href="/ferias" class="{% if request.path.startswith('/ferias') %}active{% endif %}"><i class="fas fa-umbrella-beach"></i> <span>Férias</span></a></li>
-                <li><a href="/ramais" class="{% if request.path.startswith('/ramais') %}active{% endif %}"><i class="fas fa-phone"></i> <span>Ramais</span></a></li>
-                <li><a href="/projetos" class="{% if request.path.startswith('/projetos') %}active{% endif %}"><i class="fas fa-tasks"></i> <span>Projetos</span></a></li>
-                <li><a href="/ponto" class="{% if request.path.startswith('/ponto') %}active{% endif %}"><i class="fas fa-clock"></i> <span>Controle de Ponto</span></a></li>
-                <li><a href="/movimentar" class="{% if request.path.startswith('/movimentar') %}active{% endif %}"><i class="fas fa-exchange-alt"></i> <span>Movimentar</span></a></li>
-                <li><a href="/movimentacoes" class="{% if request.path.startswith('/movimentacoes') %}active{% endif %}"><i class="fas fa-history"></i> <span>Histórico</span></a></li>
+                {% if session.get('tipo') == 'recepcao' %}
+                    <li>
+                        <a href="/recepcao" class="{% if request.path.startswith('/recepcao') %}active{% endif %}">
+                            <span>Central de Atendimento</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li><a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-chart-bar"></i> <span>Dashboard</span></a></li>
+                    <li><a href="/bens" class="{% if request.path.startswith('/bens') %}active{% endif %}"><i class="fas fa-laptop"></i> <span>Bens</span></a></li>
+                    <li><a href="/planilha" class="{% if request.path.startswith('/planilha') %}active{% endif %}"><i class="fas fa-table"></i> <span>Planilha</span></a></li>
+                    <li><a href="/funcionarios" class="{% if request.path.startswith('/funcionarios') %}active{% endif %}"><i class="fas fa-users"></i> <span>Funcionários</span></a></li>
+                    <li><a href="/teia" class="{% if request.path.startswith('/teia') %}active{% endif %}"><i class="fas fa-project-diagram"></i> <span>Teia</span></a></li>
+                    <li><a href="/ferias" class="{% if request.path.startswith('/ferias') %}active{% endif %}"><i class="fas fa-umbrella-beach"></i> <span>Férias</span></a></li>
+                    <li><a href="/ramais" class="{% if request.path.startswith('/ramais') %}active{% endif %}"><i class="fas fa-phone"></i> <span>Ramais</span></a></li>
+                    <li><a href="/projetos" class="{% if request.path.startswith('/projetos') %}active{% endif %}"><i class="fas fa-tasks"></i> <span>Projetos</span></a></li>
+                    <li><a href="/ponto" class="{% if request.path.startswith('/ponto') %}active{% endif %}"><i class="fas fa-clock"></i> <span>Controle de Ponto</span></a></li>
+                    <li><a href="/movimentar" class="{% if request.path.startswith('/movimentar') %}active{% endif %}"><i class="fas fa-exchange-alt"></i> <span>Movimentar</span></a></li>
+                    <li><a href="/movimentacoes" class="{% if request.path.startswith('/movimentacoes') %}active{% endif %}"><i class="fas fa-history"></i> <span>Histórico</span></a></li>
+                    <li><a href="/usuarios" class="{% if request.path.startswith('/usuarios') %}active{% endif %}"><i class="fas fa-user-shield"></i> <span>Usuários</span></a></li>
+                    <li><a href="/configuracoes" class="{% if request.path.startswith('/configuracoes') %}active{% endif %}"><i class="fas fa-cog"></i> <span>Configurações</span></a></li>
+                {% endif %}
             </ul>
         </nav>
 
@@ -142,10 +152,26 @@
                 </div>
                 <div class="user-actions">
                     <div class="real-time-clock" id="headerClock"></div>
-                    <button class="btn-icon" id="btnAlertaFerias" title="Alertas de Férias" style="background:none; border:none; font-size:1.2rem; cursor:pointer; position:relative; color:#2d3748;">
+
+                    <div style="text-align: right; line-height: 1.2; margin-left: 8px; padding-left: 12px; border-left: 1px solid #e2e8f0;">
+                        <div style="font-size: 0.85rem; font-weight: 600; color: #1a2a4a;">{{ session.get('nome', 'Usuário') }}</div>
+                        <div style="font-size: 0.68rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px;">{{ session.get('tipo', '') }}</div>
+                    </div>
+
+                    <button class="btn-icon" id="btnAlertaFerias" title="Alertas de Férias">
                         <i class="fas fa-bell"></i>
                         <span id="badgeAlertaFerias" style="display:none; position:absolute; top:-4px; right:-4px; background:#dc3545; color:white; border-radius:50%; font-size:0.7rem; padding:2px 6px; font-weight:700;">0</span>
                     </button>
+
+                    {% if session.get('tipo') == 'admin' %}
+                    <button class="btn-icon" id="btnTrocarSenha" title="Trocar senha" style="color:#d97706;">
+                        <i class="fas fa-key"></i>
+                    </button>
+                    {% endif %}
+
+                    <a href="/logout" title="Sair" style="background:none; border:none; font-size:1.15rem; cursor:pointer; color:#dc3545; text-decoration:none; padding: 0 8px;">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
                 </div>
             </header>
             <div class="content">
@@ -154,7 +180,7 @@
         </main>
     </div>
 
-    <!-- Modal Alertas de Férias -->
+    <!-- ===================== MODAL ALERTAS DE FÉRIAS ===================== -->
     <div class="modal fade" id="modalAlertasFerias" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -175,6 +201,44 @@
         </div>
     </div>
 
+    {% if session.get('tipo') == 'admin' %}
+    <!-- ===================== MODAL TROCAR SENHA — só admin ===================== -->
+    <div class="modal fade" id="modalTrocarSenha" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#1a2a4a; color:white;">
+                    <h5 class="modal-title"><i class="fas fa-key me-2"></i>Trocar Senha</h5>
+                    <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="alertaSenha" class="alert" style="display:none;"></div>
+                    <form id="formTrocarSenha" autocomplete="off">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Senha atual</label>
+                            <input type="password" class="form-control" id="senhaAtual" required autocomplete="current-password">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nova senha</label>
+                            <input type="password" class="form-control" id="senhaNova" minlength="6" required autocomplete="new-password">
+                            <small class="text-muted">Mínimo 6 caracteres</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Confirmar nova senha</label>
+                            <input type="password" class="form-control" id="senhaConfirmar" minlength="6" required autocomplete="new-password">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary" id="btnSalvarSenha">
+                        <i class="fas fa-save me-1"></i> Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
@@ -189,12 +253,16 @@
         }
         updateClock(); setInterval(updateClock, 1000);
 
+        // ===== Sidebar toggle =====
         document.getElementById('toggleSidebar')?.addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('mainContent').classList.toggle('expanded');
+            const sidebar = document.getElementById('sidebar');
+            const main = document.getElementById('mainContent');
+            sidebar.classList.toggle('collapsed');
+            sidebar.classList.toggle('open');
+            main.classList.toggle('expanded');
         });
 
-        // ====== Alertas de Férias ======
+        // ===== Alertas de Férias =====
         async function carregarAlertasFerias() {
             try {
                 const r = await fetch('/api/alertas_ferias');
@@ -282,6 +350,80 @@
 
         carregarAlertasFerias();
         setInterval(carregarAlertasFerias, 60000);
+
+        // ===== TROCAR SENHA (só admin) =====
+        document.getElementById('btnTrocarSenha')?.addEventListener('click', function() {
+            document.getElementById('formTrocarSenha').reset();
+            const alerta = document.getElementById('alertaSenha');
+            alerta.style.display = 'none';
+            new bootstrap.Modal(document.getElementById('modalTrocarSenha')).show();
+        });
+
+        document.getElementById('btnSalvarSenha')?.addEventListener('click', async function() {
+            const alerta = document.getElementById('alertaSenha');
+            const senhaAtual = document.getElementById('senhaAtual').value;
+            const senhaNova = document.getElementById('senhaNova').value;
+            const confirmar = document.getElementById('senhaConfirmar').value;
+
+            alerta.style.display = 'none';
+
+            if (!senhaAtual || !senhaNova || !confirmar) {
+                alerta.className = 'alert alert-danger';
+                alerta.textContent = 'Preencha todos os campos.';
+                alerta.style.display = 'block';
+                return;
+            }
+            if (senhaNova.length < 6) {
+                alerta.className = 'alert alert-danger';
+                alerta.textContent = 'A nova senha deve ter ao menos 6 caracteres.';
+                alerta.style.display = 'block';
+                return;
+            }
+            if (senhaNova !== confirmar) {
+                alerta.className = 'alert alert-danger';
+                alerta.textContent = 'As senhas não coincidem.';
+                alerta.style.display = 'block';
+                return;
+            }
+
+            const btn = this;
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Salvando...';
+
+            try {
+                const r = await fetch('/api/trocar_senha', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        senha_atual: senhaAtual,
+                        senha_nova: senhaNova,
+                        confirmar: confirmar
+                    })
+                });
+                const j = await r.json();
+
+                if (j.ok) {
+                    alerta.className = 'alert alert-success';
+                    alerta.textContent = '✅ ' + (j.msg || 'Senha alterada com sucesso!');
+                    alerta.style.display = 'block';
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(document.getElementById('modalTrocarSenha')).hide();
+                    }, 1500);
+                } else {
+                    alerta.className = 'alert alert-danger';
+                    alerta.textContent = '❌ ' + (j.msg || 'Erro ao trocar senha.');
+                    alerta.style.display = 'block';
+                }
+            } catch (e) {
+                alerta.className = 'alert alert-danger';
+                alerta.textContent = '❌ Erro de conexão com o servidor.';
+                alerta.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = original;
+            }
+        });
     </script>
     {% block scripts %}{% endblock %}
 </body>
