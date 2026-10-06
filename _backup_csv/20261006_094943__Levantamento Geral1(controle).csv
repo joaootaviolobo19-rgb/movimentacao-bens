@@ -477,7 +477,7 @@ Telefone Fixo;1430;;;Depósito RH;TI;Grandstream;;;;Status: Bom;;;;;OK;#REF!;202
 Telefone Fixo;1450;;;Depósito RH;TI;Grandstream;;;;Status: Bom;;;;;OK;#REF!;2026-09-01 00:00:00;
 Telefone Fixo;1625;;;Depósito RH;TI;Grandstream;;;;Status: Caixa;;;;;OK;#REF!;2026-09-01 00:00:00;
 Telefone Fixo;1610;;;Depósito RH;TI;Grandstream;;;;Status: Caixa;;;;;OK;#REF!;2026-09-01 00:00:00;
-Telefone Fixo;1630;;;Portaria;Portaria;Grandstream;;3141;;Status: Bom;;;;;OK;#REF!;2026-09-01 00:00:00;
+Telefone Fixo;1625;;;Depósito RH;TI;Grandstream;;;;sem telefone;;;;;OK;#REF!;2026-09-01 00:00:00;
 Telefone Fixo;2170;;;Diretoria Administrativa;MAURICIO GODINHO DOS SANTOS;Grandstream;;3222;;Status: Bom;;;;;OK;#REF!;2026-09-01 00:00:00;
 Telefone Fixo;1450;;;Diretoria Comercial;WELLINGTON ALMEIDA MACHADO;Grandstream;;3195;;Status: Bom;;;;;OK;#REF!;2026-09-01 00:00:00;
 Telefone Fixo;2170;;;Diretoria Executiva;GUSTAVO FRAGA BRANDAO PAULUS;Grandstream;;3082;;Status: Bom;;;;;OK;#REF!;2026-09-01 00:00:00;

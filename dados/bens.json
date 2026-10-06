@@ -4001,8 +4001,7 @@
     "_auditoria": "#REF!",
     "_verificacao": "2026-09-01 00:00:00",
     "_depto_extra": "",
-    "id": 182,
-    "atualizado_em": "2026-10-01T12:09:52.415845"
+    "id": 182
   },
   {
     "categoria": "Micro",
@@ -10518,16 +10517,16 @@
   },
   {
     "categoria": "Telefone Fixo",
-    "modelo": "1625",
+    "modelo": "1630",
     "hostname": "",
     "patrimonio": "",
-    "departamento": "Depósito RH",
-    "responsavel": "TI",
+    "departamento": "Portaria",
+    "responsavel": "Portaria",
     "marca": "Grandstream",
     "serial": "",
-    "ramal": "",
+    "ramal": "3141",
     "ip": "",
-    "observacao": "sem telefone",
+    "observacao": "Status: Bom",
     "cpu": "",
     "disco": "",
     "ram": "",
@@ -10536,7 +10535,8 @@
     "_auditoria": "#REF!",
     "_verificacao": "2026-09-01 00:00:00",
     "_depto_extra": "",
-    "id": 479
+    "id": 479,
+    "atualizado_em": "2026-10-06T09:50:43.211849"
   },
   {
     "categoria": "Telefone Fixo",
