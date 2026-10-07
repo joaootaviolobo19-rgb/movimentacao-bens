@@ -9,8 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root {
             --primary-color: #1a2a4a;
@@ -31,7 +29,7 @@
             color: white; height: 100vh; position: fixed; left: 0; top: 0;
             padding-top: var(--header-height); z-index: 1000;
             box-shadow: 0 10px 15px rgba(0,0,0,0.1);
-            overflow-y: auto; transition: transform 0.3s ease;
+            overflow-y: auto;             transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .sidebar.collapsed { transform: translateX(-100%); }
         .sidebar-header {
@@ -54,7 +52,7 @@
         .sidebar-menu i { width: 20px; margin-right: 0.75rem; font-size: 1.1rem; }
         .main-content {
             flex: 1; margin-left: var(--sidebar-width);
-            transition: margin-left 0.3s ease; display: flex; flex-direction: column;
+            transition: margin-left 0.32s cubic-bezier(0.22, 1, 0.36, 1); display: flex; flex-direction: column;
         }
         .main-content.expanded { margin-left: 0; }
         .header {
@@ -106,6 +104,13 @@
             .sidebar.open { transform: translateX(0); }
             .main-content { margin-left: 0; }
         }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+            }
+        }
     </style>
     {% block styles %}{% endblock %}
 </head>
@@ -116,34 +121,27 @@
                 <img src="{{ url_for('static', filename='lateral.png') }}" alt="Record Logo">
             </div>
             <ul class="sidebar-menu">
-                {% if session.get('tipo') == 'recepcao' %}
-                    <li>
-                        <a href="/recepcao" class="{% if request.path.startswith('/recepcao') %}active{% endif %}">
-                            <span>Central de Atendimento</span>
-                        </a>
-                    </li>
-                {% else %}
-                    <li><a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-chart-bar"></i> <span>Dashboard</span></a></li>
-                    <li><a href="/bens" class="{% if request.path.startswith('/bens') %}active{% endif %}"><i class="fas fa-laptop"></i> <span>Bens</span></a></li>
-                    <li><a href="/planilha" class="{% if request.path.startswith('/planilha') %}active{% endif %}"><i class="fas fa-table"></i> <span>Planilha</span></a></li>
-                    <li><a href="/funcionarios" class="{% if request.path.startswith('/funcionarios') %}active{% endif %}"><i class="fas fa-users"></i> <span>Funcionários</span></a></li>
-                    <li><a href="/organograma" class="{% if request.path.startswith('/organograma') %}active{% endif %}"><i class="fas fa-sitemap"></i> <span>Organograma</span></a></li>
-                    <li><a href="/ferias" class="{% if request.path.startswith('/ferias') %}active{% endif %}"><i class="fas fa-umbrella-beach"></i> <span>Férias</span></a></li>
-                    <li><a href="/ramais" class="{% if request.path.startswith('/ramais') %}active{% endif %}"><i class="fas fa-phone"></i> <span>Ramais</span></a></li>
-                    <li><a href="/projetos" class="{% if request.path.startswith('/projetos') %}active{% endif %}"><i class="fas fa-tasks"></i> <span>Projetos</span></a></li>
-                    <li><a href="/ponto" class="{% if request.path.startswith('/ponto') %}active{% endif %}"><i class="fas fa-clock"></i> <span>Controle de Ponto</span></a></li>
-                    <li><a href="/movimentar" class="{% if request.path.startswith('/movimentar') %}active{% endif %}"><i class="fas fa-exchange-alt"></i> <span>Movimentar</span></a></li>
-                    <li><a href="/movimentacoes" class="{% if request.path.startswith('/movimentacoes') %}active{% endif %}"><i class="fas fa-history"></i> <span>Histórico</span></a></li>
-                    <li><a href="/usuarios" class="{% if request.path.startswith('/usuarios') %}active{% endif %}"><i class="fas fa-user-shield"></i> <span>Usuários</span></a></li>
-                    <li><a href="/configuracoes" class="{% if request.path.startswith('/configuracoes') %}active{% endif %}"><i class="fas fa-cog"></i> <span>Configurações</span></a></li>
-                {% endif %}
+                {% if tem_permissao('dashboard.ver') %}<li><a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-chart-bar"></i> <span>Dashboard</span></a></li>{% endif %}
+                {% if tem_permissao('recepcao.ver') %}<li><a href="/recepcao" class="{% if request.path.startswith('/recepcao') %}active{% endif %}"><i class="fas fa-address-book"></i> <span>Central de Atendimento</span></a></li>{% endif %}
+                {% if tem_permissao('bens.ver') %}<li><a href="/bens" class="{% if request.path.startswith('/bens') %}active{% endif %}"><i class="fas fa-laptop"></i> <span>Bens</span></a></li>{% endif %}
+                {% if tem_permissao('planilha.ver') %}<li><a href="/planilha" class="{% if request.path.startswith('/planilha') %}active{% endif %}"><i class="fas fa-table"></i> <span>Planilha</span></a></li>{% endif %}
+                {% if tem_permissao('funcionarios.ver') %}<li><a href="/funcionarios" class="{% if request.path.startswith('/funcionarios') %}active{% endif %}"><i class="fas fa-users"></i> <span>Funcionários</span></a></li>{% endif %}
+                {% if tem_permissao('organograma.ver') %}<li><a href="/organograma" class="{% if request.path.startswith('/organograma') %}active{% endif %}"><i class="fas fa-sitemap"></i> <span>Organograma</span></a></li>{% endif %}
+                {% if tem_permissao('ferias.ver') %}<li><a href="/ferias" class="{% if request.path.startswith('/ferias') %}active{% endif %}"><i class="fas fa-umbrella-beach"></i> <span>Férias</span></a></li>{% endif %}
+                {% if tem_permissao('ramais.ver') %}<li><a href="/ramais" class="{% if request.path.startswith('/ramais') %}active{% endif %}"><i class="fas fa-phone"></i> <span>Ramais</span></a></li>{% endif %}
+                {% if tem_permissao('projetos.ver') %}<li><a href="/projetos" class="{% if request.path.startswith('/projetos') %}active{% endif %}"><i class="fas fa-tasks"></i> <span>Projetos</span></a></li>{% endif %}
+                {% if tem_permissao('ponto.ver') %}<li><a href="/ponto" class="{% if request.path.startswith('/ponto') %}active{% endif %}"><i class="fas fa-clock"></i> <span>Controle de Ponto</span></a></li>{% endif %}
+                {% if tem_permissao('movimentacoes.editar') %}<li><a href="/movimentar" class="{% if request.path.startswith('/movimentar') %}active{% endif %}"><i class="fas fa-exchange-alt"></i> <span>Movimentar</span></a></li>{% endif %}
+                {% if tem_permissao('movimentacoes.ver') %}<li><a href="/movimentacoes" class="{% if request.path.startswith('/movimentacoes') %}active{% endif %}"><i class="fas fa-history"></i> <span>Histórico</span></a></li>{% endif %}
+                {% if tem_permissao('usuarios.ver') %}<li><a href="/usuarios" class="{% if request.path.startswith('/usuarios') %}active{% endif %}"><i class="fas fa-user-shield"></i> <span>Usuários e perfis</span></a></li>{% endif %}
+                {% if tem_permissao('configuracoes.ver') %}<li><a href="/configuracoes" class="{% if request.path.startswith('/configuracoes') %}active{% endif %}"><i class="fas fa-cog"></i> <span>Configurações</span></a></li>{% endif %}
             </ul>
         </nav>
 
         <main class="main-content" id="mainContent">
             <header class="header">
                 <div class="header-actions">
-                    <button class="toggle-sidebar" id="toggleSidebar" aria-label="Alternar menu">
+                    <button class="toggle-sidebar" id="toggleSidebar" aria-label="Alternar menu" aria-expanded="true">
                         <i class="fas fa-bars"></i>
                     </button>
                     <h1 id="pageTitle" class="h4 mb-0">{% block page_title %}Movimentação de Bens{% endblock %}</h1>
@@ -153,18 +151,14 @@
 
                     <div style="text-align: right; line-height: 1.2; margin-left: 8px; padding-left: 12px; border-left: 1px solid #e2e8f0;">
                         <div style="font-size: 0.85rem; font-weight: 600; color: #1a2a4a;">{{ session.get('nome', 'Usuário') }}</div>
-                        <div style="font-size: 0.68rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px;">{{ session.get('tipo', '') }}</div>
+                        <div style="font-size: 0.68rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px;">{{ nome_perfil }}</div>
                     </div>
 
-                    <button class="btn-icon" id="btnAlertaFerias" title="Alertas de Férias">
-                        <i class="fas fa-bell"></i>
-                        <span id="badgeAlertaFerias" style="display:none; position:absolute; top:-4px; right:-4px; background:#dc3545; color:white; border-radius:50%; font-size:0.7rem; padding:2px 6px; font-weight:700;">0</span>
-                    </button>
-
-                    {% if session.get('tipo') == 'admin' %}
-                    <button class="btn-icon" id="btnTrocarSenha" title="Trocar senha" style="color:#d97706;">
-                        <i class="fas fa-key"></i>
-                    </button>
+                    {% if tem_permissao('alertas.ver') %}
+                        <button class="btn-icon" id="btnAlertaFerias" title="Alertas de Férias">
+                            <i class="fas fa-bell"></i>
+                            <span id="badgeAlertaFerias" style="display:none; position:absolute; top:-4px; right:-4px; background:#dc3545; color:white; border-radius:50%; font-size:0.7rem; padding:2px 6px; font-weight:700;">0</span>
+                        </button>
                     {% endif %}
 
                     <a href="/logout" title="Sair" style="background:none; border:none; font-size:1.15rem; cursor:pointer; color:#dc3545; text-decoration:none; padding: 0 8px;">
@@ -178,6 +172,7 @@
         </main>
     </div>
 
+    {% if tem_permissao('alertas.ver') %}
     <div class="modal fade" id="modalAlertasFerias" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -197,46 +192,9 @@
             </div>
         </div>
     </div>
-
-    {% if session.get('tipo') == 'admin' %}
-    <div class="modal fade" id="modalTrocarSenha" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header" style="background:#1a2a4a; color:white;">
-                    <h5 class="modal-title"><i class="fas fa-key me-2"></i>Trocar Senha</h5>
-                    <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="alertaSenha" class="alert" style="display:none;"></div>
-                    <form id="formTrocarSenha" autocomplete="off">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Senha atual</label>
-                            <input type="password" class="form-control" id="senhaAtual" required autocomplete="current-password">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Nova senha</label>
-                            <input type="password" class="form-control" id="senhaNova" minlength="6" required autocomplete="new-password">
-                            <small class="text-muted">Mínimo 6 caracteres</small>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Confirmar nova senha</label>
-                            <input type="password" class="form-control" id="senhaConfirmar" minlength="6" required autocomplete="new-password">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button class="btn btn-primary" id="btnSalvarSenha">
-                        <i class="fas fa-save me-1"></i> Salvar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
     {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         function updateClock() {
             const now = new Date();
@@ -252,16 +210,36 @@
         document.getElementById('toggleSidebar')?.addEventListener('click', function() {
             const sidebar = document.getElementById('sidebar');
             const main = document.getElementById('mainContent');
-            sidebar.classList.toggle('collapsed');
-            sidebar.classList.toggle('open');
-            main.classList.toggle('expanded');
+            const desktop = window.matchMedia('(min-width: 769px)').matches;
+            if (desktop) {
+                sidebar.classList.toggle('collapsed');
+                main.classList.toggle('expanded');
+            } else {
+                sidebar.classList.toggle('open');
+            }
+            this.setAttribute('aria-expanded', String(
+                desktop ? !sidebar.classList.contains('collapsed')
+                        : sidebar.classList.contains('open')
+            ));
         });
+
+        {% if tem_permissao('alertas.ver') %}
+        function escaparHtml(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, caractere => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+            })[caractere]);
+        }
 
         async function carregarAlertasFerias() {
             try {
                 const r = await fetch('/api/alertas_ferias');
                 const j = await r.json();
                 if (!j.ok) return;
+                const conflitosRamais = j.conflitos_ramais || [];
 
                 const badge = document.getElementById('badgeAlertaFerias');
                 if (j.total > 0) {
@@ -299,8 +277,8 @@
                             <div class="p-3 mb-2 rounded" style="${extraStyle}">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <strong>${a.nome}</strong>
-                                        <div class="text-muted small">Retorna das férias em ${a.dias} dia(s) (${a.data}) — Libere os acessos no AD e Microsoft 365</div>
+                                        <strong>${escaparHtml(a.nome)}</strong>
+                                        <div class="text-muted small">Retorna das férias em ${escaparHtml(a.dias)} dia(s) (${escaparHtml(a.data)}) — Libere os acessos no AD e Microsoft 365</div>
                                     </div>
                                     <span style="background:${badgeColor}; color:white; padding:4px 10px; border-radius:12px; font-weight:700; font-size:0.8rem;">${badgeText}</span>
                                 </div>
@@ -316,8 +294,8 @@
                             <div class="p-3 mb-2 rounded" style="background:#fff5f5; border-left:4px solid #dc3545;">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <strong class="text-danger">${a.nome}</strong>
-                                        <div class="text-muted small">Inicia as férias amanhã (${a.data})</div>
+                                        <strong class="text-danger">${escaparHtml(a.nome)}</strong>
+                                        <div class="text-muted small">Inicia as férias amanhã (${escaparHtml(a.data)})</div>
                                         <small class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i>Bloquear acessos no AD e Microsoft 365</small>
                                     </div>
                                     <span style="background:#dc3545; color:white; padding:4px 10px; border-radius:12px; font-weight:700; font-size:0.8rem;">AMANHÃ</span>
@@ -327,8 +305,22 @@
                     });
                 }
 
+                if (conflitosRamais.length > 0) {
+                    html += '<h6 class="mb-3 mt-3" style="color:#92400e;"><i class="fas fa-phone me-2"></i>Conflitos de Ramais</h6>';
+                    conflitosRamais.forEach(conflito => {
+                        const ramais = conflito.ramais.map(escaparHtml).join(', ');
+                        html += `
+                            <div class="p-3 mb-2 rounded" style="background:#fff7ed; border-left:4px solid #d97706;">
+                                <strong>${escaparHtml(conflito.nome)}</strong>
+                                <div class="text-muted small">Ramais encontrados: ${ramais}</div>
+                                <div class="text-muted small">Corrija os dados na Planilha para remover este aviso.</div>
+                            </div>
+                        `;
+                    });
+                }
+
                 if (!html) {
-                    html = '<div class="text-center text-muted py-4"><i class="fas fa-check-circle fa-2x text-success mb-2"></i><div>Nenhum alerta de férias no momento</div></div>';
+                    html = '<div class="text-center text-muted py-4"><i class="fas fa-check-circle fa-2x text-success mb-2"></i><div>Nenhum alerta no momento</div></div>';
                 }
 
                 corpo.innerHTML = html;
@@ -344,79 +336,8 @@
 
         carregarAlertasFerias();
         setInterval(carregarAlertasFerias, 60000);
+        {% endif %}
 
-        document.getElementById('btnTrocarSenha')?.addEventListener('click', function() {
-            document.getElementById('formTrocarSenha').reset();
-            const alerta = document.getElementById('alertaSenha');
-            alerta.style.display = 'none';
-            new bootstrap.Modal(document.getElementById('modalTrocarSenha')).show();
-        });
-
-        document.getElementById('btnSalvarSenha')?.addEventListener('click', async function() {
-            const alerta = document.getElementById('alertaSenha');
-            const senhaAtual = document.getElementById('senhaAtual').value;
-            const senhaNova = document.getElementById('senhaNova').value;
-            const confirmar = document.getElementById('senhaConfirmar').value;
-
-            alerta.style.display = 'none';
-
-            if (!senhaAtual || !senhaNova || !confirmar) {
-                alerta.className = 'alert alert-danger';
-                alerta.textContent = 'Preencha todos os campos.';
-                alerta.style.display = 'block';
-                return;
-            }
-            if (senhaNova.length < 6) {
-                alerta.className = 'alert alert-danger';
-                alerta.textContent = 'A nova senha deve ter ao menos 6 caracteres.';
-                alerta.style.display = 'block';
-                return;
-            }
-            if (senhaNova !== confirmar) {
-                alerta.className = 'alert alert-danger';
-                alerta.textContent = 'As senhas não coincidem.';
-                alerta.style.display = 'block';
-                return;
-            }
-
-            const btn = this;
-            const original = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Salvando...';
-
-            try {
-                const r = await fetch('/api/trocar_senha', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        senha_atual: senhaAtual,
-                        senha_nova: senhaNova,
-                        confirmar: confirmar
-                    })
-                });
-                const j = await r.json();
-
-                if (j.ok) {
-                    alerta.className = 'alert alert-success';
-                    alerta.textContent = (j.msg || 'Senha alterada com sucesso!');
-                    alerta.style.display = 'block';
-                    setTimeout(() => {
-                        bootstrap.Modal.getInstance(document.getElementById('modalTrocarSenha')).hide();
-                    }, 1500);
-                } else {
-                    alerta.className = 'alert alert-danger';
-                    alerta.textContent = (j.msg || 'Erro ao trocar senha.');
-                    alerta.style.display = 'block';
-                }
-            } catch (e) {
-                alerta.className = 'alert alert-danger';
-                alerta.textContent = 'Erro de conexão com o servidor.';
-                alerta.style.display = 'block';
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = original;
-            }
-        });
     </script>
     {% block scripts %}{% endblock %}
 </body>

@@ -30,8 +30,13 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Senha de App</label>
+                    {% if cfg.smtp_password_from_env %}
+                    <input class="form-control" id="cfg_pass" type="password" placeholder="Gerenciada fora do sistema" disabled>
+                    <small class="text-muted">A senha SMTP é gerenciada na configuração privada do servidor.</small>
+                    {% else %}
                     <input class="form-control" id="cfg_pass" type="password" placeholder="Deixe em branco para manter a atual">
-                    <small class="text-muted"><i class="fas fa-exclamation-triangle"></i> Se usar Gmail, crie uma "Senha de App" em <a href="https://myaccount.google.com/apppasswords" target="_blank">myaccount.google.com/apppasswords</a></small>
+                    <small class="text-muted">Se usar Gmail, crie uma "Senha de App" em <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer">myaccount.google.com/apppasswords</a></small>
+                    {% endif %}
                 </div>
                 <div class="form-check mb-3">
                     <input class="form-check-input" type="checkbox" id="cfg_tls" {% if cfg.smtp_tls %}checked{% endif %}>
@@ -43,6 +48,11 @@
                 </div>
 
                 <h6 class="border-bottom pb-2 mb-3">Alertas de Férias</h6>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="cfg_enviar_inicio_ferias"
+                           {% if cfg.enviar_inicio_ferias %}checked{% endif %}>
+                    <label class="form-check-label" for="cfg_enviar_inicio_ferias">Enviar alerta no dia de início das férias</label>
+                </div>
                 <div class="form-check form-switch mb-2">
                     <input class="form-check-input" type="checkbox" id="cfg_enviar_ferias" {% if cfg.enviar_ferias %}checked{% endif %}>
                     <label class="form-check-label" for="cfg_enviar_ferias">Enviar alerta 1 dia antes do retorno das férias</label>
@@ -73,6 +83,31 @@
     </div>
 </div>
 
+<div class="row justify-content-center mt-3">
+    <div class="col-lg-9">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-list-check me-2"></i>Status dos bens
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">
+                    Informe um status por linha. Status atualmente associado a bens não pode ser removido.
+                </p>
+                <label class="form-label" for="listaStatusBens">Status disponíveis</label>
+                <textarea class="form-control" id="listaStatusBens" rows="6"
+                          maxlength="2500">{{ status_bens|join('\n') }}</textarea>
+                <div class="small text-muted mt-2">
+                    Em uso: {{ status_em_uso|join(', ') if status_em_uso else 'nenhum' }}
+                </div>
+                <button class="btn btn-primary mt-3" onclick="salvarStatusBens()">
+                    <i class="fas fa-save me-1"></i> Salvar lista de status
+                </button>
+                <div id="msgStatusBens" class="alert mt-3 d-none"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -97,6 +132,7 @@ async function salvarConfig(){
         destinatarios_ferias: document.getElementById('cfg_dest_ferias').value,
         destinatarios_relatorio: document.getElementById('cfg_dest_rel').value,
         enviar_ferias: document.getElementById('cfg_enviar_ferias').checked,
+        enviar_inicio_ferias: document.getElementById('cfg_enviar_inicio_ferias').checked,
         enviar_relatorio: document.getElementById('cfg_enviar_rel').checked,
     };
     const r = await fetch('/api/configuracoes_email/salvar', {
@@ -115,6 +151,29 @@ async function testarEmail(){
     });
     const j = await r.json();
     mostrarMsg(j.msg, j.ok ? 'ok' : 'erro');
+}
+
+async function salvarStatusBens(){
+    const msg = document.getElementById('msgStatusBens');
+    try {
+        const status = document.getElementById('listaStatusBens').value
+            .split(/\r?\n/)
+            .map(valor => valor.trim())
+            .filter(Boolean);
+        const resposta = await fetch('/api/admin/status/salvar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({status}),
+        });
+        const resultado = await resposta.json();
+        msg.className = 'alert mt-3 ' + (resposta.ok && resultado.ok ? 'alert-success' : 'alert-danger');
+        msg.textContent = resultado.msg || 'Não foi possível salvar a lista.';
+        msg.classList.remove('d-none');
+    } catch (erro) {
+        msg.className = 'alert alert-danger mt-3';
+        msg.textContent = erro.message || 'Erro de conexão.';
+        msg.classList.remove('d-none');
+    }
 }
 </script>
 {% endblock %}

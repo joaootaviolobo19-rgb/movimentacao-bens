@@ -102,6 +102,7 @@
       <i class="bi bi-arrow-right mx-1 text-muted"></i>
       <span class="seta">{{h.para_responsavel or '(sem)'}}</span>
     </div>
+    <div class="text-muted small mt-1">Registrado por: {{h.realizado_por or '—'}}</div>
     {% if h.obs %}<div class="text-muted small mt-1">{{h.obs}}</div>{% endif %}
   </div>
   {% endfor %}

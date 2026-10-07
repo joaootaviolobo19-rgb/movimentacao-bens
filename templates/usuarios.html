@@ -54,6 +54,11 @@
 <h5 class="mb-3" style="color:#1a2a4a; font-weight:600;">
     Usuários do Sistema
     <span class="text-muted fw-normal" style="font-size:0.9rem;">({{ usuarios|length }})</span>
+    {% if tem_permissao('usuarios.editar') %}
+    <button class="btn btn-success btn-sm float-end" onclick="abrirCriacaoUsuario()">
+        <i class="fas fa-user-plus me-1"></i> Novo usuário
+    </button>
+    {% endif %}
 </h5>
 
 <div class="tabela-usuarios">
@@ -62,8 +67,8 @@
             <tr>
                 <th>Usuário</th>
                 <th>Nome</th>
-                <th>Tipo</th>
-                <th style="width:220px; text-align:right;">Ações</th>
+                <th>Perfil</th>
+                <th style="min-width:360px; text-align:right;">Ações</th>
             </tr>
         </thead>
         <tbody>
@@ -72,13 +77,35 @@
                 <td style="font-weight:600; color:#1a2a4a;">{{ u.usuario }}</td>
                 <td>{{ u.nome }}</td>
                 <td>
-                    <span class="tipo-badge tipo-{{ u.tipo }}">{{ u.tipo }}</span>
+                    <span class="tipo-badge tipo-outro">{{ u.perfil_nome }}</span>
                 </td>
                 <td style="text-align:right;">
+                    {% if tem_permissao('usuarios.editar') and u.usuario != usuario_atual %}
+                    <select class="form-select form-select-sm d-inline-block" style="width:auto"
+                            id="perfil-{{ loop.index }}">
+                        {% for perfil in perfis %}
+                        <option value="{{ perfil.id }}" {% if perfil.id == u.tipo %}selected{% endif %}>{{ perfil.nome }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            onclick="alterarPerfil('{{ u.usuario }}', document.getElementById('perfil-{{ loop.index }}').value)">
+                        Alterar perfil
+                    </button>
+                    {% endif %}
+                    {% if tem_permissao('usuarios.editar') %}
                     <button class="btn btn-sm btn-outline-primary"
-                            onclick="abrirTrocaSenha('{{ u.usuario }}', '{{ u.nome }}')">
+                            data-usuario="{{ u.usuario }}" data-nome="{{ u.nome }}"
+                            onclick="abrirTrocaSenha(this.dataset.usuario, this.dataset.nome)">
                         <i class="fas fa-key me-1"></i> Trocar senha
                     </button>
+                    {% if u.usuario != usuario_atual %}
+                    <button class="btn btn-sm btn-outline-danger"
+                            data-usuario="{{ u.usuario }}" data-nome="{{ u.nome }}"
+                            onclick="excluirUsuario(this.dataset.usuario, this.dataset.nome)">
+                        <i class="fas fa-trash me-1"></i> Excluir
+                    </button>
+                    {% endif %}
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
@@ -86,7 +113,140 @@
     </table>
 </div>
 
+{% if tem_permissao('usuarios.ver') %}
+<div class="card mt-4">
+    <div class="card-header">
+        <span>Perfis e permissões</span>
+        {% if tem_permissao('usuarios.editar') %}
+        <button class="btn btn-primary btn-sm" onclick="editarPerfil(null)">
+            <i class="fas fa-plus me-1"></i> Novo perfil
+        </button>
+        {% endif %}
+    </div>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead><tr><th>Perfil</th><th>Permissões</th>{% if tem_permissao('usuarios.editar') %}<th class="text-end">Ações</th>{% endif %}</tr></thead>
+            <tbody>
+            {% for perfil in perfis %}
+                <tr>
+                    <td class="fw-semibold">{{ perfil.nome }}</td>
+                    <td class="small text-muted">
+                        {% if '*' in perfil.permissoes %}Acesso completo{% else %}
+                        {{ perfil.permissoes|length }} permissão(ões)
+                        {% endif %}
+                    </td>
+                    {% if tem_permissao('usuarios.editar') %}
+                    <td class="text-end">
+                        {% if perfil.id != 'admin' %}
+                        <button class="btn btn-sm btn-outline-primary" onclick='editarPerfil({{ perfil|tojson }})'>Editar</button>
+                        {% endif %}
+                        {% if perfil.id not in ['admin', 'recepcao'] %}
+                        <button class="btn btn-sm btn-outline-danger"
+                                onclick="excluirPerfil('{{ perfil.id }}', '{{ perfil.nome }}')">Excluir</button>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if tem_permissao('usuarios.editar') %}
+<div class="modal fade" id="modalPerfil" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1a2a4a;color:white">
+                <h5 class="modal-title">Permissões do perfil</h5>
+                <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formPerfil">
+                <div class="modal-body">
+                    <input type="hidden" id="perfilId">
+                    <label class="form-label" for="perfilNome">Nome do perfil</label>
+                    <input class="form-control mb-3" id="perfilNome" maxlength="60" required>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead><tr><th>Tela</th><th>Consultar</th><th>Editar</th><th>Exportar</th></tr></thead>
+                            <tbody>
+                            {% for area, rotulo in permissoes_disponiveis %}
+                                <tr>
+                                    <td>{{ rotulo }}</td>
+                                    {% for acao in ['ver', 'editar', 'exportar'] %}
+                                    <td>{% if acao in acoes_por_recurso[area] %}
+                                        <input class="form-check-input permissao-perfil" type="checkbox"
+                                               id="perm-{{ area }}-{{ acao }}" data-area="{{ area }}" data-acao="{{ acao }}"
+                                               aria-label="{{ rotulo }}: {{ acao }}">
+                                        {% else %}<span class="text-muted">—</span>{% endif %}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="small text-muted">Edição e exportação exigem também permissão de consulta.</div>
+                    <div class="alert d-none mt-3" id="alertaPerfil"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar perfil</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if tem_permissao('usuarios.editar') %}
+<div class="modal fade" id="modalNovoUsuario" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#1a2a4a; color:white;">
+                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Novo usuário</h5>
+                <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formNovoUsuario">
+                <div class="modal-body">
+                    <div class="alert d-none" id="alertaNovoUsuario"></div>
+                    <div class="mb-3">
+                        <label class="form-label" for="novoUsuario">Nome de usuário</label>
+                        <input class="form-control" id="novoUsuario" required minlength="3" maxlength="40"
+                               autocomplete="off" pattern="[A-Za-z0-9._-]+">
+                        <small class="text-muted">Use letras, números, ponto, hífen ou sublinhado.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="novoNome">Nome da pessoa</label>
+                        <input class="form-control" id="novoNome" required autocomplete="name">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="novoTipo">Perfil</label>
+                        <select class="form-select" id="novoTipo" required>
+                            {% for perfil in perfis %}
+                            <option value="{{ perfil.id }}">{{ perfil.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="novaSenhaUsuario">Senha inicial</label>
+                        <input class="form-control" type="password" id="novaSenhaUsuario"
+                               minlength="6" required autocomplete="new-password">
+                        <small class="text-muted">Mínimo de 6 caracteres.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Criar usuário</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Modal: trocar senha de outro usuário -->
+{% if tem_permissao('usuarios.editar') %}
 <div class="modal fade" id="modalAdminSenha" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -94,6 +254,7 @@
                 <h5 class="modal-title"><i class="fas fa-key me-2"></i>Trocar Senha</h5>
                 <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
+            {% endif %}
             <div class="modal-body">
                 <p class="mb-3">
                     Usuário: <strong id="nomeUsuarioSenha">—</strong>
@@ -101,8 +262,8 @@
                 <div id="alertaAdminSenha" class="alert" style="display:none;"></div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Nova senha</label>
-                    <input type="text" class="form-control" id="novaSenhaAdmin" minlength="6" autocomplete="off">
-                    <small class="text-muted">Mínimo 6 caracteres. Será exibida em texto para você repassar ao usuário.</small>
+                    <input type="password" class="form-control" id="novaSenhaAdmin" minlength="6" autocomplete="new-password">
+                    <small class="text-muted">Mínimo 6 caracteres. Informe a nova senha à pessoa por um canal aprovado.</small>
                 </div>
                 <input type="hidden" id="usuarioAlvoSenha">
             </div>
@@ -121,6 +282,20 @@
 {% block scripts %}
 <script>
     let modalAdminSenha;
+    const modalPerfilEl = document.getElementById('modalPerfil');
+    const modalPerfil = modalPerfilEl ? new bootstrap.Modal(modalPerfilEl) : null;
+    const modalNovoUsuarioElement = document.getElementById('modalNovoUsuario');
+    const modalNovoUsuario = modalNovoUsuarioElement
+        ? new bootstrap.Modal(modalNovoUsuarioElement)
+        : null;
+
+    function abrirCriacaoUsuario() {
+        document.getElementById('formNovoUsuario').reset();
+        const alerta = document.getElementById('alertaNovoUsuario');
+        alerta.className = 'alert d-none';
+        alerta.textContent = '';
+        modalNovoUsuario.show();
+    }
 
     function abrirTrocaSenha(usuario, nome) {
         document.getElementById('usuarioAlvoSenha').value = usuario;
@@ -131,6 +306,126 @@
             modalAdminSenha = new bootstrap.Modal(document.getElementById('modalAdminSenha'));
         }
         modalAdminSenha.show();
+    }
+
+    function editarPerfil(perfil) {
+        document.getElementById('formPerfil').reset();
+        document.getElementById('perfilId').value = perfil ? perfil.id : '';
+        document.getElementById('perfilNome').value = perfil ? perfil.nome : '';
+        const permissoes = new Set(perfil ? perfil.permissoes : []);
+        document.querySelectorAll('.permissao-perfil').forEach(input => {
+            input.checked = permissoes.has(`${input.dataset.area}.${input.dataset.acao}`);
+        });
+        const alerta = document.getElementById('alertaPerfil');
+        alerta.className = 'alert d-none mt-3';
+        alerta.textContent = '';
+        modalPerfil.show();
+    }
+
+    document.getElementById('formPerfil')?.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const permissoes = Array.from(document.querySelectorAll('.permissao-perfil:checked'))
+            .map(input => `${input.dataset.area}.${input.dataset.acao}`);
+        const alerta = document.getElementById('alertaPerfil');
+        try {
+            const resposta = await fetch('/api/admin/perfis/salvar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    id: document.getElementById('perfilId').value || null,
+                    nome: document.getElementById('perfilNome').value,
+                    permissoes,
+                }),
+            });
+            const resultado = await resposta.json();
+            if (!resposta.ok || !resultado.ok) throw new Error(resultado.msg || 'Não foi possível salvar o perfil.');
+            location.reload();
+        } catch (erro) {
+            alerta.className = 'alert alert-danger mt-3';
+            alerta.textContent = erro.message || 'Erro de conexão.';
+        }
+    });
+
+    async function alterarPerfil(usuario, perfil) {
+        if (!confirm(`Alterar o perfil de ${usuario}?`)) return;
+        try {
+            const resposta = await fetch('/api/admin/usuarios/perfil', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({usuario, perfil}),
+            });
+            const resultado = await resposta.json();
+            if (!resposta.ok || !resultado.ok) throw new Error(resultado.msg || 'Não foi possível alterar o perfil.');
+            location.reload();
+        } catch (erro) {
+            alert(erro.message || 'Erro de conexão.');
+        }
+    }
+
+    async function excluirPerfil(id, nome) {
+        if (!confirm(`Excluir o perfil ${nome}?`)) return;
+        try {
+            const resposta = await fetch('/api/admin/perfis/excluir', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id}),
+            });
+            const resultado = await resposta.json();
+            if (!resposta.ok || !resultado.ok) throw new Error(resultado.msg || 'Não foi possível excluir o perfil.');
+            location.reload();
+        } catch (erro) {
+            alert(erro.message || 'Erro de conexão.');
+        }
+    }
+
+    document.getElementById('formNovoUsuario')?.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const alerta = document.getElementById('alertaNovoUsuario');
+        const botao = this.querySelector('[type="submit"]');
+        botao.disabled = true;
+        try {
+            const resposta = await fetch('/api/admin/usuarios/criar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    usuario: document.getElementById('novoUsuario').value,
+                    nome: document.getElementById('novoNome').value,
+                    tipo: document.getElementById('novoTipo').value,
+                    senha: document.getElementById('novaSenhaUsuario').value,
+                }),
+            });
+            const resultado = await resposta.json();
+            if (!resposta.ok || !resultado.ok) {
+                throw new Error(resultado.msg || 'Não foi possível criar o usuário.');
+            }
+            location.reload();
+        } catch (erro) {
+            alerta.className = 'alert alert-danger';
+            alerta.textContent = erro.message || 'Erro de conexão.';
+            alerta.classList.remove('d-none');
+        } finally {
+            botao.disabled = false;
+        }
+    });
+
+    async function excluirUsuario(usuario, nome) {
+        if (!confirm(`Excluir a conta de ${nome} (${usuario})? O histórico de movimentações será preservado.`)) {
+            return;
+        }
+        try {
+            const resposta = await fetch('/api/admin/usuarios/excluir', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario }),
+            });
+            const resultado = await resposta.json();
+            if (!resposta.ok || !resultado.ok) {
+                throw new Error(resultado.msg || 'Não foi possível excluir o usuário.');
+            }
+            location.reload();
+        } catch (erro) {
+            alert(erro.message || 'Erro de conexão.');
+        }
     }
 
     document.getElementById('btnSalvarAdminSenha')?.addEventListener('click', async function() {

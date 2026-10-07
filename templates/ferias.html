@@ -99,7 +99,7 @@
 
 {% block content %}
 
-{% set is_admin = session.get('tipo') == 'admin' %}
+{% set is_admin = tem_permissao('ferias.editar') %}
 
 <div class="topo-ferias">
     <div class="d-flex align-items-center gap-3 flex-wrap">
@@ -357,7 +357,7 @@
         });
     });
 
-    {% if session.get('tipo') == 'admin' %}
+    {% if tem_permissao('ferias.editar') %}
     // ===== DADOS =====
     const FERIAS = {{ todas|tojson }};
     let modalFerias;

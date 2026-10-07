@@ -61,6 +61,16 @@
     .tabela-card tbody tr.ferias:hover { background: #dcfce7; }
 
     .nome { font-weight: 600; color: #1a2a4a; }
+    .nome-linha {
+        display: flex; align-items: center; gap: 0.55rem;
+        flex-wrap: wrap;
+    }
+    .badge-ferias {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        padding: 0.2rem 0.55rem; border-radius: 999px;
+        background: #e8f5ee; color: #176b3a;
+        font-size: 0.72rem; font-weight: 600; white-space: nowrap;
+    }
     .ramal {
         display: inline-block; background: #eff6ff; color: #1d4ed8;
         padding: 3px 10px; border-radius: 6px;
@@ -68,12 +78,6 @@
     }
     .sem-ramal { color: #cbd5e1; font-size: 0.85rem; }
     .obs { color: #64748b; font-size: 0.85rem; }
-
-    .bolinha {
-        display: inline-block; width: 10px; height: 10px;
-        border-radius: 50%; border: 2px solid #cbd5e1; background: transparent;
-    }
-    .bolinha.ativa { border-color: #16a34a; background: #16a34a; }
 
     .barra-prog {
         width: 100px; height: 6px; background: #e2e8f0;
@@ -147,14 +151,20 @@
                     <th>Cargo</th>
                     <th>Departamento</th>
                     <th>Ramal</th>
-                    <th style="width:70px; text-align:center;">Férias</th>
                 </tr>
             </thead>
             <tbody>
                 {% for r in registros %}
                 <tr class="linha-item {% if r.em_ferias %}ferias{% endif %}"
                     data-busca="{{ r.busca|lower }}">
-                    <td class="nome">{{ r.nome }}</td>
+                    <td>
+                        <div class="nome-linha">
+                            <span class="nome">{{ r.nome }}</span>
+                            {% if r.em_ferias %}
+                            <span class="badge-ferias"><i class="fas fa-umbrella-beach" aria-hidden="true"></i> Em férias</span>
+                            {% endif %}
+                        </div>
+                    </td>
                     <td>{{ r.cargo or '—' }}</td>
                     <td>{{ r.departamento or '—' }}</td>
                     <td>
@@ -163,10 +173,6 @@
                         {% else %}
                             <span class="sem-ramal">Sem ramal</span>
                         {% endif %}
-                    </td>
-                    <td style="text-align:center;">
-                        <span class="bolinha {% if r.em_ferias %}ativa{% endif %}"
-                              title="{% if r.em_ferias %}Em férias{% else %}Disponível{% endif %}"></span>
                     </td>
                 </tr>
                 {% endfor %}

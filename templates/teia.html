@@ -196,15 +196,17 @@
                 <span id="btnFisicaText">Pausar</span>
             </button>
             <button class="teia-btn" id="btnReset" title="Centralizar">
-                🎯 Centralizar
+                <i class="fas fa-crosshairs" aria-hidden="true"></i> Centralizar
             </button>
             <button class="teia-btn" id="btnFullscreen" title="Tela cheia">
-                ⛶
+                <i class="fas fa-expand" aria-hidden="true"></i>
             </button>
         </div>
 
         <div class="teia-legend" id="legend">
-            <button class="teia-legend-close" onclick="document.getElementById('legend').style.display='none'">✕</button>
+            <button class="teia-legend-close" aria-label="Fechar legenda" onclick="document.getElementById('legend').style.display='none'">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
             <h6>Departamentos</h6>
             <div id="legendItems"></div>
         </div>
@@ -352,7 +354,7 @@
             network.once('stabilizationIterationsDone', function() {
                 network.setOptions({ physics: { enabled: false } });
                 fisicaAtiva = false;
-                document.getElementById('btnFisicaIcon').textContent = '▶';
+                document.getElementById('btnFisicaIcon').className = 'fas fa-play';
                 document.getElementById('btnFisicaText').textContent = 'Retomar';
             });
 
@@ -376,7 +378,8 @@
             console.error(e);
             document.getElementById('loading').innerHTML =
                 `<div style="color:#f87171;text-align:center;padding:2rem;">
-                    ❌ ${e.message || 'Erro ao carregar teia'}
+                    <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                    ${e.message || 'Erro ao carregar teia'}
                 </div>`;
         }
     }
@@ -398,7 +401,7 @@
         if (!network) return;
         fisicaAtiva = !fisicaAtiva;
         network.setOptions({ physics: { enabled: fisicaAtiva } });
-        document.getElementById('btnFisicaIcon').textContent = fisicaAtiva ? '⏸' : '▶';
+        document.getElementById('btnFisicaIcon').className = fisicaAtiva ? 'fas fa-pause' : 'fas fa-play';
         document.getElementById('btnFisicaText').textContent = fisicaAtiva ? 'Pausar' : 'Retomar';
     });
 

@@ -5,7 +5,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div class="text-muted small">
         <strong class="text-dark" id="totalLinhas">{{ total }}</strong> bens ·
-        <span class="text-success"><i class="bi bi-pencil-square"></i> Clique em qualquer célula pra editar</span>
+        {% if tem_permissao('planilha.editar') %}<span class="text-success"><i class="bi bi-pencil-square"></i> Clique em qualquer célula pra editar</span>{% endif %}
     </div>
     <div class="d-flex gap-2 flex-wrap">
         <input id="busca" class="form-control form-control-sm" style="max-width:240px"
@@ -55,12 +55,14 @@
             <tbody id="corpo">
                 {% for b in bens %}
                 <tr data-id="{{ b.id }}"
-                    data-busca="{{ (b.categoria ~ ' ' ~ b.modelo ~ ' ' ~ b.hostname ~ ' ' ~ b.patrimonio ~ ' ' ~ b.departamento ~ ' ' ~ b.responsavel ~ ' ' ~ b.marca ~ ' ' ~ b.serial) | lower }}"
+                    data-versao="{{ versoes[b.id|string] }}"
+                    data-extra-busca="{{ b.values()|join(' ')|lower }}"
+                    data-busca=""
                     data-cat="{{ b.categoria }}"
                     data-dep="{{ b.departamento }}">
-                    <td class="text-center text-muted">{{ b.id }}</td>
+                    <td class="text-center text-muted">{{ loop.index }}</td>
                     {% for campo in ['categoria','modelo','hostname','patrimonio','departamento','responsavel','marca','serial','ramal','ip','cpu','disco','ram','iso','status','observacao'] %}
-                    <td contenteditable="true"
+                    <td contenteditable="{% if tem_permissao('planilha.editar') %}true{% else %}false{% endif %}"
                         data-campo="{{ campo }}"
                         data-original="{{ b[campo] or '' }}"
                         onfocus="marcarEditando(this)"
@@ -139,12 +141,24 @@ async function salvarCelula(td) {
         const r = await fetch('/api/bens/celula', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ id, campo, valor: novo })
+            body: JSON.stringify({ id, campo, valor: novo, versao: tr.dataset.versao })
         });
         const j = await r.json();
         td.classList.remove('salvando');
+        if (r.status === 409 || j.conflito) {
+            td.innerText = original;
+            tr.querySelectorAll('td[data-campo]').forEach(celula => {
+                celula.contentEditable = 'false';
+            });
+            mostrarStatus(j.msg || 'Este bem foi alterado por outra pessoa. Recarregue a Planilha antes de editar.', true, true);
+            if (confirm('Este bem mudou desde que a Planilha foi aberta. Recarregar agora?')) {
+                location.reload();
+            }
+            return;
+        }
         if (j.ok) {
             td.dataset.original = novo;
+            tr.dataset.versao = j.versao;
             td.classList.add('salvo');
             setTimeout(() => td.classList.remove('salvo'), 900);
             mostrarStatus(`Salvo: ${campo} = "${novo}"`);
@@ -168,14 +182,10 @@ async function salvarCelula(td) {
 
 function atualizarBusca(tr) {
     const celulas = tr.querySelectorAll('td[data-campo]');
-    const vals = [];
-    celulas.forEach(c => {
-        const campo = c.dataset.campo;
-        if (['categoria','modelo','hostname','patrimonio','departamento','responsavel','marca','serial'].includes(campo)) {
-            vals.push(c.innerText.trim().toLowerCase());
-        }
-    });
-    tr.dataset.busca = vals.join(' ');
+    tr.dataset.busca = [
+        tr.dataset.extraBusca || '',
+        ...Array.from(celulas).map(c => c.innerText.trim().toLowerCase())
+    ].join(' ');
 }
 
 function atalhoCelula(e, td) {
@@ -222,20 +232,23 @@ function moverFoco(td, dir) {
 }
 
 let statusTimer = null;
-function mostrarStatus(msg, erro) {
+function mostrarStatus(msg, erro, persistente) {
     const bar = document.getElementById('statusBar');
     const txt = document.getElementById('statusTexto');
     txt.textContent = msg;
     bar.className = 'alert py-2 px-3 small mb-3 ' + (erro ? 'alert-danger' : 'alert-success');
     bar.classList.remove('d-none');
     if (statusTimer) clearTimeout(statusTimer);
-    statusTimer = setTimeout(() => bar.classList.add('d-none'), 2500);
+    statusTimer = persistente ? null : setTimeout(() => bar.classList.add('d-none'), 2500);
 }
 
 function exportarCSV() {
     window.location.href = '/bens/exportar.csv';
 }
 
-document.addEventListener('DOMContentLoaded', filtrar);
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('#corpo tr').forEach(atualizarBusca);
+    filtrar();
+});
 </script>
 {% endblock %}
