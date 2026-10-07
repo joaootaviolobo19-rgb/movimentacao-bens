@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Organograma · Record Guaíba</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', Roboto, system-ui, sans-serif; }
+        body { background: #f0f4f9; padding: 2rem; display: flex; justify-content: center; min-height: 100vh; }
+        .container { max-width: 1400px; width: 100%; background: #fff; border-radius: 32px; padding: 2rem 2.5rem 3rem; box-shadow: 0 20px 60px rgba(0,0,0,0.08); border: 1px solid #e8ecf1; }
+        .header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 3px solid #1a2a4a; }
+        .logo-area { display: flex; align-items: center; gap: 1rem; }
+        .logo-box { width: 60px; height: 60px; background: #1a2a4a; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+        .logo-box span { font-size: 1.8rem; font-weight: 700; color: #fff; }
+        .logo-text h1 { font-size: 1.6rem; font-weight: 700; color: #1a2a4a; }
+        .logo-text small { font-size: 0.6rem; color: #6a7f98; display: block; letter-spacing: 2px; text-transform: uppercase; }
+        .stats { font-size: 0.8rem; color: #4a5f78; background: #f0f4f9; padding: 0.4rem 1.5rem; border-radius: 40px; border: 1px solid #dce4ed; }
+        .btn-pdf { border: none; padding: 0.5rem 1.5rem; border-radius: 40px; font-weight: 600; font-size: 0.8rem; cursor: pointer; background: #1a2a4a; color: #fff; }
+        .btn-pdf:hover { background: #2a3a5a; }
+        .org-tree { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 1rem 0; overflow-x: auto; }
+        .root-node { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .node { display: flex; flex-direction: column; align-items: center; width: 100%; padding: 0.2rem 0; }
+        .node-card { display: flex; flex-direction: column; align-items: center; padding: 0.6rem 1rem 0.8rem; background: #fff; border: 2px solid #dce4ed; border-radius: 16px; min-width: 120px; max-width: 200px; min-height: 80px; cursor: pointer; gap: 0.4rem; box-shadow: 0 2px 12px rgba(0,0,0,0.04); text-align: center; }
+        .node-card:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(26,42,74,0.12); }
+        .node-card .icon { width: 0.7rem; height: 0.7rem; display: flex; align-items: center; justify-content: center; color: #4a6a8a; background: rgba(26,42,74,0.06); border-radius: 50%; border: 1px solid rgba(26,42,74,0.1); position: absolute; top: -8px; right: -8px; }
+        .node-card .label .cargo { font-size: 0.42rem; color: #4a6a8a; }
+        .node-card .label .nome { font-weight: 600; color: #1a2a4a; font-size: 0.65rem; }
+        .node-card .label .depto { color: #4a7a9c; font-size: 0.32rem; background: #f0f4f9; padding: 0.02rem 0.4rem; border-radius: 10px; text-transform: uppercase; }
+        .level-0 .node-card { background: linear-gradient(135deg, #f0f5ff, #e8f0fe); border-color: #1a2a4a; border-width: 3px; min-width: 200px; }
+        .children-wrap { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.5s, opacity 0.4s; }
+        .children-wrap.open { max-height: 10000px; opacity: 1; padding-top: 1rem; overflow: visible; }
+        .children-grid { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 1rem 2rem; }
+        .children-grid .node { width: auto; min-width: 80px; max-width: 200px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="logo-area">
+            <div class="logo-box"><span>RG</span></div>
+            <div class="logo-text">
+                <h1>Record Guaíba</h1>
+                <small>organograma hierárquico</small>
+            </div>
+        </div>
+        <div style="display:flex; gap:1rem; align-items:center;">
+            <div class="stats">Colaboradores: <strong id="totalCount">0</strong></div>
+            <button class="btn-pdf" id="exportPdfBtn">Exportar PDF</button>
+        </div>
+    </div>
+    <div class="org-tree" id="orgTree">
+        <div style="text-align:center;padding:3rem;color:rgba(26,42,74,0.2);">Carregando organograma...</div>
+    </div>
+</div>
+
+<script>
+    const supabaseUrl = 'https://sptokglrqlhggjzrjrer.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwdG9rZ2xycWxoZ2dqenJqcmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0MjI4OTUsImV4cCI6MjA4MTk5ODg5NX0.M9tW5sLJgMeWhi8HNTTQIR1IqLFOJp9aBLrluUC_Efo';
+
+    async function load() {
+        const r = await fetch(supabaseUrl + '/rest/v1/colaboradores?select=*', {
+            headers: { 'apikey': supabaseKey, 'Authorization': 'Bearer ' + supabaseKey }
+        });
+        return await r.json();
+    }
+
+    function buildTree(data) {
+        if (!data || !data.length) return null;
+        const map = {};
+        data.forEach(i => map[i.id] = { ...i, children: [] });
+        const roots = [];
+        data.forEach(i => {
+            if (i.supervisor_id && map[i.supervisor_id]) map[i.supervisor_id].children.push(map[i.id]);
+            else roots.push(map[i.id]);
+        });
+        if (roots.length === 1) return roots[0];
+        return { id: 'root', nome: 'Record Guaíba', cargo: 'Organograma', depto: 'Diretoria', children: roots };
+    }
+
+    const cargosExibemNome = ['Diretor Executivo','Diretor Institucional','Diretor Comercial','Diretor Administrativo','Diretor de Programação','Diretor','Gerente Financeiro','Gerente de Recursos Humanos','Gerente de Jornalismo','Gerente de Operações e Engenharia','Supervisor de T.I.','Supervisora Comercial','Supervisor de Operações','Coordenador de OPEC','Coordenador Contábil','Coordenadora de Controladoria','Coordenador de Marketing','Coordenador'];
+
+    function render(node, parent, level) {
+        const div = document.createElement('div');
+        div.className = 'node level-' + Math.min(level, 4);
+        const card = document.createElement('div');
+        card.className = 'node-card';
+        const hasChildren = node.children && node.children.length > 0;
+        const icon = document.createElement('span');
+        icon.className = 'icon';
+        icon.textContent = hasChildren ? '▶' : '•';
+        card.appendChild(icon);
+        const label = document.createElement('span');
+        label.className = 'label';
+        let h = '';
+        if (cargosExibemNome.includes(node.cargo)) h += `<span class="nome">${node.nome || ''}</span>`;
+        if (node.cargo) h += `<span class="cargo">${node.cargo}</span>`;
+        if (node.depto) h += `<span class="depto">${node.depto}</span>`;
+        label.innerHTML = h;
+        card.appendChild(label);
+        div.appendChild(card);
+        const wrap = document.createElement('div');
+        wrap.className = 'children-wrap';
+        if (hasChildren) {
+            const grid = document.createElement('div');
+            grid.className = 'children-grid';
+            node.children.forEach(c => render(c, grid, level + 1));
+            wrap.appendChild(grid);
+            wrap.classList.add('open');
+            card.addEventListener('click', e => {
+                e.stopPropagation();
+                wrap.classList.toggle('open');
+            });
+        }
+        div.appendChild(wrap);
+        parent.appendChild(div);
+    }
+
+    (async () => {
+        try {
+            const data = await load();
+            const tree = buildTree(data);
+            const container = document.getElementById('orgTree');
+            container.innerHTML = '';
+            if (tree) {
+                const root = document.createElement('div');
+                root.className = 'root-node';
+                container.appendChild(root);
+                render(tree, root, 0);
+            }
+            document.getElementById('totalCount').textContent = data.length;
+        } catch (e) {
+            document.getElementById('orgTree').innerHTML = '<div style="padding:2rem;color:#c0392b;">Erro ao carregar: ' + e.message + '</div>';
+        }
+    })();
+
+    document.getElementById('exportPdfBtn').addEventListener('click', () => window.print());
+</script>
+</body>
+</html>

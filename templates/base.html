@@ -93,8 +93,6 @@
             color: white; display: flex; align-items: center; justify-content: center;
             font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
         }
-        .teia-node { transition: box-shadow 0.2s; }
-        .teia-node:hover { box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
         .badge.bg-info-subtle { background-color: rgba(13, 202, 240, 0.15) !important; color: #055160 !important; }
         .badge.bg-primary-subtle { background-color: rgba(13, 110, 253, 0.12) !important; color: #084298 !important; }
         .badge.bg-success-subtle { background-color: rgba(25, 135, 84, 0.12) !important; color: #0f5132 !important; }
@@ -129,7 +127,7 @@
                     <li><a href="/bens" class="{% if request.path.startswith('/bens') %}active{% endif %}"><i class="fas fa-laptop"></i> <span>Bens</span></a></li>
                     <li><a href="/planilha" class="{% if request.path.startswith('/planilha') %}active{% endif %}"><i class="fas fa-table"></i> <span>Planilha</span></a></li>
                     <li><a href="/funcionarios" class="{% if request.path.startswith('/funcionarios') %}active{% endif %}"><i class="fas fa-users"></i> <span>Funcionários</span></a></li>
-                    <li><a href="/teia" class="{% if request.path.startswith('/teia') %}active{% endif %}"><i class="fas fa-project-diagram"></i> <span>Teia</span></a></li>
+                    <li><a href="/organograma" class="{% if request.path.startswith('/organograma') %}active{% endif %}"><i class="fas fa-sitemap"></i> <span>Organograma</span></a></li>
                     <li><a href="/ferias" class="{% if request.path.startswith('/ferias') %}active{% endif %}"><i class="fas fa-umbrella-beach"></i> <span>Férias</span></a></li>
                     <li><a href="/ramais" class="{% if request.path.startswith('/ramais') %}active{% endif %}"><i class="fas fa-phone"></i> <span>Ramais</span></a></li>
                     <li><a href="/projetos" class="{% if request.path.startswith('/projetos') %}active{% endif %}"><i class="fas fa-tasks"></i> <span>Projetos</span></a></li>
@@ -180,7 +178,6 @@
         </main>
     </div>
 
-    <!-- ===================== MODAL ALERTAS DE FÉRIAS ===================== -->
     <div class="modal fade" id="modalAlertasFerias" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -202,7 +199,6 @@
     </div>
 
     {% if session.get('tipo') == 'admin' %}
-    <!-- ===================== MODAL TROCAR SENHA — só admin ===================== -->
     <div class="modal fade" id="modalTrocarSenha" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -253,7 +249,6 @@
         }
         updateClock(); setInterval(updateClock, 1000);
 
-        // ===== Sidebar toggle =====
         document.getElementById('toggleSidebar')?.addEventListener('click', function() {
             const sidebar = document.getElementById('sidebar');
             const main = document.getElementById('mainContent');
@@ -262,7 +257,6 @@
             main.classList.toggle('expanded');
         });
 
-        // ===== Alertas de Férias =====
         async function carregarAlertasFerias() {
             try {
                 const r = await fetch('/api/alertas_ferias');
@@ -334,7 +328,7 @@
                 }
 
                 if (!html) {
-                    html = '<div class="text-center text-muted py-4"><i class="fas fa-check-circle fa-2x text-success mb-2"></i><div>Nenhum alerta de férias no momento 🎉</div></div>';
+                    html = '<div class="text-center text-muted py-4"><i class="fas fa-check-circle fa-2x text-success mb-2"></i><div>Nenhum alerta de férias no momento</div></div>';
                 }
 
                 corpo.innerHTML = html;
@@ -351,7 +345,6 @@
         carregarAlertasFerias();
         setInterval(carregarAlertasFerias, 60000);
 
-        // ===== TROCAR SENHA (só admin) =====
         document.getElementById('btnTrocarSenha')?.addEventListener('click', function() {
             document.getElementById('formTrocarSenha').reset();
             const alerta = document.getElementById('alertaSenha');
@@ -405,19 +398,19 @@
 
                 if (j.ok) {
                     alerta.className = 'alert alert-success';
-                    alerta.textContent = '✅ ' + (j.msg || 'Senha alterada com sucesso!');
+                    alerta.textContent = (j.msg || 'Senha alterada com sucesso!');
                     alerta.style.display = 'block';
                     setTimeout(() => {
                         bootstrap.Modal.getInstance(document.getElementById('modalTrocarSenha')).hide();
                     }, 1500);
                 } else {
                     alerta.className = 'alert alert-danger';
-                    alerta.textContent = '❌ ' + (j.msg || 'Erro ao trocar senha.');
+                    alerta.textContent = (j.msg || 'Erro ao trocar senha.');
                     alerta.style.display = 'block';
                 }
             } catch (e) {
                 alerta.className = 'alert alert-danger';
-                alerta.textContent = '❌ Erro de conexão com o servidor.';
+                alerta.textContent = 'Erro de conexão com o servidor.';
                 alerta.style.display = 'block';
             } finally {
                 btn.disabled = false;

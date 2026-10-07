@@ -19,7 +19,6 @@
                     <th>Nome</th>
                     <th>Cargo</th>
                     <th>Setor</th>
-                    <th>Bens</th>
                     <th class="text-end">Ações</th>
                 </tr>
             </thead>
@@ -29,25 +28,18 @@
                     <td class="fw-semibold">{{f.nome}}</td>
                     <td class="small">{{f.cargo or '—'}}</td>
                     <td><span class="badge bg-secondary">{{f.setor or '—'}}</span></td>
-                    <td>
-                        {% if f.total_bens %}
-                            <a href="/teia?foco={{f.nome}}" class="badge bg-primary text-decoration-none">{{f.total_bens}}</a>
-                        {% else %}
-                            <span class="text-muted">—</span>
-                        {% endif %}
-                    </td>
                     <td class="text-end text-nowrap">
-                        <button class="btn btn-outline-primary btn-sm" onclick='editarFunc({{loop.index0}}, {{f|tojson}})' title="Editar">
+                        <button class="btn btn-outline-primary btn-sm" onclick='editarFunc({{f.id}}, {{f|tojson}})' title="Editar">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-outline-primary btn-sm" onclick="excluirFunc({{loop.index0}})" title="Excluir">
+                        <button class="btn btn-outline-primary btn-sm" onclick="excluirFunc({{f.id}})" title="Excluir">
                             <i class="bi bi-trash"></i>
                         </button>
                     </td>
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="5" class="text-center text-muted py-5">
+                    <td colspan="4" class="text-center text-muted py-5">
                         <i class="bi bi-people fs-1 d-block mb-2 opacity-50"></i>
                         Nenhum funcionário cadastrado.
                     </td>
@@ -66,7 +58,7 @@
                 <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="hidden" id="func_idx">
+                <input type="hidden" id="func_id">
                 <div class="mb-3">
                     <label class="form-label">Nome</label>
                     <input id="func_nome" class="form-control">
@@ -94,14 +86,14 @@
 <script>
 function novoFunc(){
     document.getElementById('tituloFunc').textContent = 'Novo Funcionário';
-    document.getElementById('func_idx').value = '';
+    document.getElementById('func_id').value = '';
     ['nome','cargo','setor'].forEach(c => document.getElementById('func_'+c).value = '');
     new bootstrap.Modal(document.getElementById('modalFunc')).show();
 }
 
-function editarFunc(idx, f){
+function editarFunc(id, f){
     document.getElementById('tituloFunc').textContent = 'Editar Funcionário';
-    document.getElementById('func_idx').value = idx;
+    document.getElementById('func_id').value = id;
     document.getElementById('func_nome').value = f.nome || '';
     document.getElementById('func_cargo').value = f.cargo || '';
     document.getElementById('func_setor').value = f.setor || '';
@@ -109,22 +101,37 @@ function editarFunc(idx, f){
 }
 
 async function salvarFunc(){
-    const idx = document.getElementById('func_idx').value;
+    const id = document.getElementById('func_id').value;
     const d = {
-        idx: idx === '' ? null : parseInt(idx),
+        id: id === '' ? null : parseInt(id),
         nome: document.getElementById('func_nome').value,
         cargo: document.getElementById('func_cargo').value,
         setor: document.getElementById('func_setor').value
     };
-    const r = await fetch('/funcionarios/salvar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)});
-    const j = await r.json();
-    if (j.ok) location.reload(); else alert(j.msg);
+    try {
+        const r = await fetch('/funcionarios/salvar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(d)
+        });
+        const j = await r.json();
+        if (j.ok) location.reload();
+        else alert('Erro: ' + (j.msg || 'falha ao salvar'));
+    } catch (e) {
+        alert('Erro de conexão.');
+    }
 }
 
-async function excluirFunc(idx){
+async function excluirFunc(id){
     if (!confirm('Excluir este funcionário?')) return;
-    await fetch('/funcionarios/excluir/'+idx, {method:'POST'});
-    location.reload();
+    try {
+        const r = await fetch('/funcionarios/excluir/' + id, {method: 'POST'});
+        const j = await r.json();
+        if (j.ok) location.reload();
+        else alert('Erro: ' + (j.msg || 'falha ao excluir'));
+    } catch (e) {
+        alert('Erro de conexão.');
+    }
 }
 </script>
 {% endblock %}

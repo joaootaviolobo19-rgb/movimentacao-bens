@@ -224,9 +224,28 @@ async function confirmarTransferencia(){
         novo_departamento: document.getElementById('transf_departamento').value,
         obs: document.getElementById('transf_obs').value
     };
-    const r = await fetch('/bens/transferir', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)});
-    const j = await r.json();
-    if (j.ok) location.reload();
+
+    if (!d.novo_responsavel) {
+        alert('Informe o novo responsável');
+        return;
+    }
+
+    try {
+        const r = await fetch('/bens/transferir', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(d)
+        });
+        const j = await r.json();
+        if (j.ok) {
+            location.reload();
+        } else {
+            alert('Erro: ' + (j.msg || 'não foi possível transferir'));
+        }
+    } catch (e) {
+        alert('Erro de conexão com o servidor.');
+        console.error(e);
+    }
 }
 </script>
 {% endblock %}

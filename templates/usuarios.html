@@ -160,7 +160,7 @@
             const j = await r.json();
 
             alerta.className = j.ok ? 'alert alert-success' : 'alert alert-danger';
-            alerta.textContent = (j.ok ? '✅ ' : '❌ ') + j.msg;
+            alerta.textContent = (j.ok ? ' ' : ' ') + j.msg;
             alerta.style.display = 'block';
 
             if (j.ok) {
@@ -168,7 +168,7 @@
             }
         } catch (e) {
             alerta.className = 'alert alert-danger';
-            alerta.textContent = '❌ Erro de conexão.';
+            alerta.textContent = ' Erro de conexão.';
             alerta.style.display = 'block';
         } finally {
             btn.disabled = false;

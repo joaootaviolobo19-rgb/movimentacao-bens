@@ -1,101 +1,217 @@
 {% extends "base.html" %}
-{% block title %}Teia{% endblock %}
+
+{% block title %}Teia - Record{% endblock %}
+{% block page_title %}Teia{% endblock %}
+
+{% block styles %}
+<style>
+    .teia-page {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 150px);
+        gap: 0.75rem;
+    }
+
+    .teia-topbar {
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .teia-stat {
+        background: #fff;
+        padding: 0.5rem 0.95rem;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        font-weight: 500;
+    }
+    .teia-stat strong { color: #1a2a4a; }
+
+    .teia-topbar input {
+        padding: 0.5rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        width: 280px;
+        margin-left: auto;
+    }
+    .teia-topbar input:focus {
+        outline: none;
+        border-color: #1a2a4a;
+        box-shadow: 0 0 0 3px rgba(26,42,74,0.08);
+    }
+
+    .teia-canvas {
+        flex: 1;
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+        background: radial-gradient(ellipse at center, #0f172a 0%, #020617 100%);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+        min-height: 500px;
+    }
+    #graph {
+        width: 100%;
+        height: 100%;
+    }
+
+    .teia-toolbar {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        display: flex;
+        gap: 0.5rem;
+        z-index: 10;
+    }
+    .teia-btn {
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(10px);
+        color: #cbd5e1;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        padding: 0.55rem 0.9rem;
+        border-radius: 9px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: 0.15s;
+    }
+    .teia-btn:hover {
+        background: rgba(30, 41, 59, 0.95);
+        color: #fff;
+        border-color: rgba(96, 165, 250, 0.5);
+    }
+
+    .teia-legend {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        background: rgba(15, 23, 42, 0.9);
+        backdrop-filter: blur(12px);
+        padding: 1rem 1.2rem;
+        border-radius: 14px;
+        color: #cbd5e1;
+        font-size: 0.78rem;
+        max-width: 240px;
+        max-height: 320px;
+        overflow-y: auto;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        z-index: 10;
+    }
+    .teia-legend h6 {
+        color: #fff;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        margin: 0 0 0.75rem;
+        opacity: 0.85;
+        font-weight: 600;
+    }
+    .teia-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0.5rem;
+        padding: 0.2rem 0;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: 0.15s;
+    }
+    .teia-legend-item:hover {
+        background: rgba(148, 163, 184, 0.1);
+        padding-left: 0.4rem;
+    }
+    .teia-legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        box-shadow: 0 0 10px currentColor;
+    }
+    .teia-legend-close {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.75rem;
+        background: none;
+        border: none;
+        color: #64748b;
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 0.2rem;
+    }
+    .teia-legend-close:hover { color: #fff; }
+
+    .teia-loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 0.9rem;
+        flex-direction: column;
+        gap: 1rem;
+        background: #020617;
+        z-index: 20;
+    }
+    .teia-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(148, 163, 184, 0.15);
+        border-top-color: #60a5fa;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .teia-legend::-webkit-scrollbar { width: 4px; }
+    .teia-legend::-webkit-scrollbar-track { background: transparent; }
+    .teia-legend::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.3); border-radius: 2px; }
+
+    .teia-canvas:fullscreen { border-radius: 0; }
+</style>
+{% endblock %}
+
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="text-muted small">Vínculos entre funcionários e bens</div>
-    <input id="busca" class="form-control form-control-sm" style="max-width:280px"
-           placeholder="Buscar funcionário..." oninput="filtrar()">
-</div>
-
-<div class="row g-3">
-    <div class="col-lg-8">
-        <div id="teia">
-        {% for t in teia %}
-            <div class="teia-node card mb-2" data-nome="{{t.nome|upper}}">
-                <div class="card-body py-3 px-3">
-                    <div class="d-flex align-items-center gap-3" role="button"
-                         data-bs-toggle="collapse" data-bs-target="#det{{loop.index}}">
-                        <div class="avatar-circle">{{ t.nome[:2]|upper }}</div>
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold">{{ t.nome }}</div>
-                            <div class="small text-muted">
-                                {{ t.cargo or "—" }}
-                                {% if t.setor %} · <span class="badge bg-secondary">{{ t.setor }}</span>{% endif %}
-                            </div>
-                            <div class="mt-1">
-                                {% for cat,q in t.por_categoria.items() %}
-                                <span class="badge bg-primary-subtle me-1">{{q}}× {{cat}}</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <div class="fs-4 fw-bold text-primary">{{ t.total }}</div>
-                            <div class="small text-muted">bens</div>
-                        </div>
-                        <i class="bi bi-chevron-down text-muted"></i>
-                    </div>
-                    <div class="collapse mt-2" id="det{{loop.index}}">
-                        {% for cat, itens in t.bens|sort(attribute="categoria")|groupby("categoria") %}
-                        <div class="mb-3">
-                            <div class="text-uppercase small fw-bold text-primary border-bottom pb-1 mb-2">{{cat}}</div>
-                            <ul class="list-unstyled ms-3 mb-0">
-                                {% for b in itens %}
-                                <li class="small py-1 border-bottom">
-                                    <strong>{{b.marca}}</strong> {{b.modelo}}
-                                    {% if b.hostname %} — <code>{{b.hostname}}</code>{% endif %}
-                                    {% if b.patrimonio %} · patr. {{b.patrimonio}}{% endif %}
-                                    {% if b.status %} <span class="badge bg-secondary">{{b.status}}</span>{% endif %}
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-        {% else %}
-            <div class="card">
-                <div class="card-body text-center text-muted py-5">
-                    <i class="bi bi-diagram-3 fs-1 d-block mb-2 opacity-50"></i>
-                    Nenhum vínculo encontrado.
-                </div>
-            </div>
-        {% endfor %}
-        </div>
+<div class="teia-page">
+    <div class="teia-topbar">
+    <div class="teia-stat"><i class="fas fa-users"></i> <strong id="statPessoas">—</strong> pessoas</div>
+    <div class="teia-stat"><i class="fas fa-building"></i> <strong id="statDeps">—</strong> departamentos</div>
+    <div class="teia-stat"><i class="fas fa-box"></i> <strong id="statBens">—</strong> bens</div>
+        <input type="text" id="busca" placeholder="Buscar pessoa ou departamento...">
     </div>
 
-    <div class="col-lg-4">
-        <div class="card mb-3">
-            <div class="card-header"><i class="bi bi-trophy me-2"></i>Top Funcionários</div>
-            <div class="card-body">
-                {% set top10 = teia[:10] %}
-                {% set maxv = (top10|map(attribute='total')|max) if top10 else 1 %}
-                {% for t in top10 %}
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between small mb-1">
-                        <span class="text-truncate" style="max-width:75%">{{t.nome}}</span>
-                        <strong>{{t.total}}</strong>
-                    </div>
-                    <div class="progress" style="height:5px">
-                        <div class="progress-bar bg-primary" style="width:{{(t.total/maxv*100)|round(1)}}%"></div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
+    <div class="teia-canvas" id="teiaCanvas">
+        <div id="graph"></div>
+
+        <div class="teia-toolbar">
+            <button class="teia-btn" id="btnFisica" title="Pausar/Retomar">
+                <i class="fas fa-pause" id="btnFisicaIcon"></i>
+                <span id="btnFisicaText">Pausar</span>
+            </button>
+            <button class="teia-btn" id="btnReset" title="Centralizar">
+                🎯 Centralizar
+            </button>
+            <button class="teia-btn" id="btnFullscreen" title="Tela cheia">
+                ⛶
+            </button>
         </div>
-        <div class="card">
-            <div class="card-header"><i class="bi bi-clipboard-data me-2"></i>Resumo</div>
-            <div class="card-body">
-                <div class="d-flex justify-content-between mb-2 small">
-                    <span class="text-muted">Funcionários com bens</span>
-                    <strong>{{teia|length}}</strong>
-                </div>
-                <div class="d-flex justify-content-between small">
-                    <span class="text-muted">Total vinculado</span>
-                    <strong>{{ teia|map(attribute='total')|sum }}</strong>
-                </div>
-            </div>
+
+        <div class="teia-legend" id="legend">
+            <button class="teia-legend-close" onclick="document.getElementById('legend').style.display='none'">✕</button>
+            <h6>Departamentos</h6>
+            <div id="legendItems"></div>
+        </div>
+
+        <div class="teia-loading" id="loading">
+            <div class="teia-spinner"></div>
+            <div>Montando teia...</div>
         </div>
     </div>
 </div>
@@ -103,17 +219,203 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 <script>
-function filtrar(){
-    const q = document.getElementById('busca').value.toUpperCase();
-    document.querySelectorAll('.teia-node').forEach(n => {
-        n.style.display = n.dataset.nome.includes(q) ? '' : 'none';
+    let network = null;
+    let nodesDS = null;
+    let edgesDS = null;
+    let fisicaAtiva = true;
+
+    function hsl(h, s, l) { return `hsl(${h}, ${s}%, ${l}%)`; }
+
+    async function carregar() {
+        try {
+            const r = await fetch('/api/teia_dados');
+            const data = await r.json();
+
+            if (!data.ok) throw new Error(data.msg || 'Erro ao carregar dados');
+
+            document.getElementById('statPessoas').textContent = data.total_pessoas;
+            document.getElementById('statDeps').textContent = data.total_deps;
+            document.getElementById('statBens').textContent = data.total_bens;
+
+            if (data.nodes.length === 0) {
+                document.getElementById('loading').innerHTML =
+                    '<div style="color:#94a3b8;">Nenhum dado disponível para exibir.</div>';
+                return;
+            }
+
+            // Mapeia cores
+            const mapaCores = {};
+            let proxima = 0;
+            data.nodes.forEach(n => {
+                if (n.group && !(n.group in mapaCores)) {
+                    const hue = (proxima * 137.5) % 360;
+                    mapaCores[n.group] = hsl(hue, 65, 60);
+                    proxima++;
+                }
+            });
+
+            const nodesArr = data.nodes.map(n => {
+                const cor = mapaCores[n.group] || '#60a5fa';
+                if (n.shape === 'hexagon') {
+                    return {
+                        id: n.id,
+                        label: n.label,
+                        group: n.group,
+                        shape: 'hexagon',
+                        size: 28,
+                        color: {
+                            background: '#1e293b',
+                            border: cor,
+                            highlight: { background: '#334155', border: '#fff' },
+                            hover: { background: '#334155', border: '#fff' },
+                        },
+                        font: { color: cor, size: 15, face: 'Inter', strokeWidth: 3, strokeColor: '#020617' },
+                        borderWidth: 3,
+                        shadow: { enabled: true, color: cor + 'AA', size: 25, x: 0, y: 0 },
+                    };
+                }
+                return {
+                    id: n.id,
+                    label: n.label,
+                    group: n.group,
+                    value: n.value,
+                    shape: 'dot',
+                    color: {
+                        background: cor,
+                        border: '#ffffff',
+                        highlight: { background: cor, border: '#ffffff' },
+                        hover: { background: cor, border: '#ffffff' },
+                    },
+                    font: { color: '#e2e8f0', size: 11, face: 'Inter', strokeWidth: 4, strokeColor: '#020617' },
+                    shadow: { enabled: true, color: cor + '80', size: 14, x: 0, y: 0 },
+                    title: n.title,
+                };
+            });
+
+            const edgesArr = data.edges.map(e => ({
+                from: e.from,
+                to: e.to,
+                color: {
+                    color: 'rgba(148, 163, 184, 0.15)',
+                    highlight: '#60a5fa',
+                    hover: 'rgba(96, 165, 250, 0.5)',
+                },
+                width: 1,
+                smooth: { type: 'continuous', roundness: 0.15 },
+            }));
+
+            const legendItems = Object.entries(mapaCores).map(([dep, cor]) =>
+                `<div class="teia-legend-item" data-dep="${dep}">
+                    <span class="teia-legend-dot" style="background:${cor};color:${cor};"></span>
+                    <span>${dep}</span>
+                </div>`
+            ).join('');
+            document.getElementById('legendItems').innerHTML = legendItems;
+
+            nodesDS = new vis.DataSet(nodesArr);
+            edgesDS = new vis.DataSet(edgesArr);
+
+            const options = {
+                nodes: { shape: 'dot', scaling: { min: 12, max: 35 } },
+                edges: { selectionWidth: 2, hoverWidth: 1.5 },
+                physics: {
+                    enabled: true,
+                    solver: 'forceAtlas2Based',
+                    forceAtlas2Based: {
+                        gravitationalConstant: -80,
+                        centralGravity: 0.01,
+                        springLength: 140,
+                        springConstant: 0.08,
+                        damping: 0.5,
+                        avoidOverlap: 0.5,
+                    },
+                    stabilization: { enabled: true, iterations: 300, updateInterval: 25 },
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 100,
+                    multiselect: false,
+                    zoomView: true,
+                    dragView: true,
+                    navigationButtons: false,
+                    keyboard: { enabled: false },
+                },
+                layout: { improvedLayout: true },
+            };
+
+            const container = document.getElementById('graph');
+            network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, options);
+            document.getElementById('loading').style.display = 'none';
+
+            network.once('stabilizationIterationsDone', function() {
+                network.setOptions({ physics: { enabled: false } });
+                fisicaAtiva = false;
+                document.getElementById('btnFisicaIcon').textContent = '▶';
+                document.getElementById('btnFisicaText').textContent = 'Retomar';
+            });
+
+            document.querySelectorAll('.teia-legend-item').forEach(el => {
+                el.addEventListener('click', function() {
+                    const dep = this.dataset.dep;
+                    nodesDS.get().forEach(n => {
+                        if (n.group === dep) {
+                            nodesDS.update({ id: n.id, opacity: 1 });
+                        } else {
+                            nodesDS.update({ id: n.id, opacity: 0.1 });
+                        }
+                    });
+                    setTimeout(() => {
+                        nodesDS.get().forEach(n => nodesDS.update({ id: n.id, opacity: 1 }));
+                    }, 2000);
+                });
+            });
+
+        } catch (e) {
+            console.error(e);
+            document.getElementById('loading').innerHTML =
+                `<div style="color:#f87171;text-align:center;padding:2rem;">
+                    ❌ ${e.message || 'Erro ao carregar teia'}
+                </div>`;
+        }
+    }
+
+    document.getElementById('busca').addEventListener('input', function () {
+        if (!nodesDS) return;
+        const q = this.value.trim().toLowerCase();
+        const updates = nodesDS.get().map(n => {
+            if (!q) return { id: n.id, opacity: 1 };
+            const label = (n.label || '').toLowerCase();
+            const group = (n.group || '').toLowerCase();
+            const bate = label.includes(q) || group.includes(q);
+            return { id: n.id, opacity: bate ? 1 : 0.1 };
+        });
+        nodesDS.update(updates);
     });
-}
-const foco = new URLSearchParams(location.search).get('foco');
-if (foco) {
-    document.getElementById('busca').value = foco;
-    filtrar();
-}
+
+    document.getElementById('btnFisica').addEventListener('click', function () {
+        if (!network) return;
+        fisicaAtiva = !fisicaAtiva;
+        network.setOptions({ physics: { enabled: fisicaAtiva } });
+        document.getElementById('btnFisicaIcon').textContent = fisicaAtiva ? '⏸' : '▶';
+        document.getElementById('btnFisicaText').textContent = fisicaAtiva ? 'Pausar' : 'Retomar';
+    });
+
+    document.getElementById('btnReset').addEventListener('click', function () {
+        if (!network) return;
+        network.fit({ animation: { duration: 800, easingFunction: 'easeInOutQuad' } });
+    });
+
+    document.getElementById('btnFullscreen').addEventListener('click', function () {
+        const el = document.getElementById('teiaCanvas');
+        if (!document.fullscreenElement) {
+            el.requestFullscreen().catch(() => {});
+        } else {
+            document.exitFullscreen();
+        }
+    });
+
+    carregar();
 </script>
 {% endblock %}

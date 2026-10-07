@@ -8,8 +8,10 @@ import csv
 import re
 import glob
 import shutil
+import time
 from datetime import datetime
 from collections import defaultdict, Counter
+from difflib import SequenceMatcher
 from flask import (Flask, render_template, request, jsonify, send_file,
                    session, redirect, url_for)
 
@@ -30,21 +32,15 @@ ROTAS_RECEPCAO = {
 
 @app.before_request
 def verificar_acesso():
-    # Rotas livres (sem login)
     if request.path.startswith("/static") or request.path in ("/login", "/logout"):
         return None
-
-    # Rota do cron — protegida por token na URL, não precisa de sessão
     if request.path.startswith("/api/rodar_alertas/"):
         return None
-
     if "usuario" not in session:
         return redirect(url_for("login"))
-
     if session.get("tipo") == "recepcao":
         if request.path not in ROTAS_RECEPCAO and not request.path.startswith("/api/"):
             return redirect(url_for("recepcao_view"))
-
     return None
 
 
@@ -70,6 +66,34 @@ COLS = [
     ("VERIFICAÇÃO", "_verificacao"), ("Departamento", "_depto_extra"),
 ]
 
+
+# ============================================================
+# CACHES GLOBAIS
+# ============================================================
+
+_cache_bens = {"timestamp": 0, "dados": None}
+CACHE_BENS_TTL = 60
+
+_cache_idx_funcs = {"timestamp": 0, "dados": None}
+CACHE_IDX_TTL = 60
+
+_cache_pessoas = {"timestamp": 0, "dados": None}
+CACHE_PESSOAS_TTL = 60
+
+
+def _invalidar_tudo():
+    """Invalida TODOS os caches. Chamado em qualquer save."""
+    _cache_bens["timestamp"] = 0
+    _cache_bens["dados"] = None
+    _cache_idx_funcs["timestamp"] = 0
+    _cache_idx_funcs["dados"] = None
+    _cache_pessoas["timestamp"] = 0
+    _cache_pessoas["dados"] = None
+
+
+# ============================================================
+# CSV / LEITURA / ESCRITA
+# ============================================================
 
 def _achar_csv():
     for p in [os.path.join(BASE_DIR, "Levantamento*.csv"),
@@ -112,7 +136,8 @@ def _backup_csv():
         print("[csv] Aviso backup:", e)
 
 
-def _csv_carregar():
+def _csv_carregar_raw():
+    """Lê o CSV do disco SEM cache (usada internamente)."""
     global CSV_PATH
     if not CSV_PATH:
         CSV_PATH = _achar_csv()
@@ -167,7 +192,21 @@ def _save(path, data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def load_bens(): return _csv_carregar()
+# ============================================================
+# LOADERS COM CACHE
+# ============================================================
+
+def load_bens():
+    """Leitura COM cache (60s) — não relê CSV a cada request."""
+    global _cache_bens
+    agora = time.time()
+    if (_cache_bens["dados"] is not None and
+            agora - _cache_bens["timestamp"] < CACHE_BENS_TTL):
+        return _cache_bens["dados"]
+
+    dados = _csv_carregar_raw()
+    _cache_bens = {"timestamp": agora, "dados": dados}
+    return dados
 
 
 def save_bens(lista):
@@ -176,20 +215,50 @@ def save_bens(lista):
         _save(ARQ_BENS, lista)
     except Exception:
         pass
+    _invalidar_tudo()
 
 
-def load_funcs(): return _load(ARQ_FUNC, [])
+def load_funcs():
+    """Carrega funcionários e garante IDs sequenciais."""
+    funcs = _load(ARQ_FUNC, [])
+    mudou = False
+    maior_id = 0
+    for f in funcs:
+        try:
+            fid = int(f.get("id") or 0)
+        except (ValueError, TypeError):
+            fid = 0
+        if fid > maior_id:
+            maior_id = fid
+    for f in funcs:
+        if not f.get("id"):
+            maior_id += 1
+            f["id"] = maior_id
+            mudou = True
+    if mudou and funcs:
+        _save(ARQ_FUNC, funcs)
+    return funcs
+
+
 def load_deps(): return _load(ARQ_DEP, [])
-def save_funcs(d): _save(ARQ_FUNC, d)
+def save_funcs(d):
+    _save(ARQ_FUNC, d)
+    _invalidar_tudo()
 def load_ferias(): return _load(ARQ_FER, [])
-def save_ferias(d): _save(ARQ_FER, d)
+def save_ferias(d):
+    _save(ARQ_FER, d)
+    _invalidar_tudo()
 def load_projetos(): return _load(ARQ_PROJ, [])
 def save_projetos(d): _save(ARQ_PROJ, d)
 
 
 def next_id(lista):
-    return (max([x.get("id", 0) for x in lista]) + 1) if lista else 1
+    return (max([int(x.get("id", 0) or 0) for x in lista]) + 1) if lista else 1
 
+
+# ============================================================
+# NORMALIZAÇÃO
+# ============================================================
 
 def normalizar(s):
     return re.sub(r"\s+", " ", (s or "").strip())
@@ -218,6 +287,48 @@ DEPTO_SINONIMOS = {
     "juridico": "juridico",
 }
 
+NOMES_COLETIVOS = {
+    "ti", "t.i", "t i", "tecnologia da informacao", "tecnologia",
+    "livre", "livres", "disponivel", "disponiveis", "estoque", "reserva",
+    "sem responsavel", "sem resp", "vago", "vaga",
+    "diretor", "diretoria", "diretoria executiva", "diretoria comercial",
+    "diretoria institucional", "diretoria administrativa",
+    "diretoria de programacao", "presidencia",
+    "comercial", "marketing", "financeiro", "rh",
+    "operacional", "operacoes", "operacoes comerciais", "opec",
+    "jornalismo", "programacao", "transporte", "transportes",
+    "administracao", "administrativo", "contabilidade", "controladoria",
+    "recepcao", "copa", "portaria", "sala de reuniao", "auditorio",
+    "gerencia", "coordenacao", "supervisao", "engenharia",
+    "manutencao", "limpeza", "seguranca",
+    "almoxarifado", "deposito", "deposito rh",
+    "sala vip", "frente do switcher", "frente do swicher", "comutador",
+    "switcher", "swicher", "sala de audio", "central tecnica", "geracao",
+    "usuario frente swicher", "usuario frente switcher",
+    "usuario ilha 1", "usuario ilha 2", "usuario ilha 3", "usuario ilha 4",
+    "usuario sala de audio", "usuario sala de reuniao",
+    "usuario cabine off", "usuario camarim", "usuario master",
+    "usuario almoxarifado", "usuario portaria",
+    "usuario prog/mark", "usuario progmark",
+    "sala do t.i", "sala do ti", "sala tecnica",
+    "pc geracao", "play aot", "tp", "audio hibrida",
+    "diretoria de camera", "diretor de camera",
+}
+
+PREFIXOS_COLETIVOS = ("usuario ", "usuário ", "user ", "pc ", "play ", "sala ")
+
+
+def _e_coletivo(nome):
+    if not nome:
+        return True
+    n = norm_nome(nome).lower().strip()
+    if n in NOMES_COLETIVOS:
+        return True
+    for prefixo in PREFIXOS_COLETIVOS:
+        if n.startswith(prefixo):
+            return True
+    return False
+
 
 def norm_depto(s):
     if not s:
@@ -227,11 +338,113 @@ def norm_depto(s):
 
 
 def _partes_nome(nome):
-    """Retorna (primeiro, ultimo) normalizados."""
     p = norm_nome(nome).split()
     if not p:
         return None, None
     return p[0], (p[-1] if len(p) > 1 else p[0])
+
+
+def _similaridade_nomes(a, b):
+    return SequenceMatcher(None, norm_nome(a), norm_nome(b)).ratio()
+
+
+def _tokens_nome(nome):
+    return set(norm_nome(nome).split())
+
+
+# ============================================================
+# ÍNDICES DE FUNCIONÁRIOS (busca O(1))
+# ============================================================
+
+def _construir_indices_funcs(funcs):
+    """Constrói índices O(1) para busca de funcionário por nome."""
+    idx = {
+        "por_norm": {},
+        "por_p1_pu": {},
+        "por_p1": defaultdict(list),
+    }
+    for f in funcs:
+        nome = f.get("nome", "")
+        nn = norm_nome(nome)
+        if not nn:
+            continue
+        idx["por_norm"][nn] = f
+
+        partes = nn.split()
+        if partes:
+            p1 = partes[0]
+            pu = partes[-1] if len(partes) > 1 else partes[0]
+            idx["por_p1_pu"].setdefault((p1, pu), f)
+            idx["por_p1"][p1].append(f)
+    return idx
+
+
+def _get_indices_funcs():
+    """Retorna índices em cache."""
+    global _cache_idx_funcs
+    agora = time.time()
+    if (_cache_idx_funcs["dados"] is not None and
+            agora - _cache_idx_funcs["timestamp"] < CACHE_IDX_TTL):
+        return _cache_idx_funcs["dados"]
+
+    idx = _construir_indices_funcs(load_funcs())
+    _cache_idx_funcs = {"timestamp": agora, "dados": idx}
+    return idx
+
+
+def _achar_funcionario(nome_bem):
+    """
+    Busca RÁPIDA usando índices. O(1) em 95% dos casos.
+    Ordem: exato → 1º+últ → subconjunto → fuzzy.
+    """
+    if not nome_bem:
+        return None
+    nn = norm_nome(nome_bem)
+    if not nn:
+        return None
+
+    idx = _get_indices_funcs()
+
+    # 1. Exato — O(1)
+    f = idx["por_norm"].get(nn)
+    if f:
+        return f
+
+    partes = nn.split()
+    if not partes:
+        return None
+    p1 = partes[0]
+    pu = partes[-1] if len(partes) > 1 else partes[0]
+
+    # 2. Primeiro + último — O(1)
+    f = idx["por_p1_pu"].get((p1, pu))
+    if f:
+        return f
+
+    # 3. Subconjunto — só com candidatos do mesmo 1º nome
+    candidatos = idx["por_p1"].get(p1, [])
+    tok_bem = set(partes)
+    for cand in candidatos:
+        tok_c = _tokens_nome(cand.get("nome", ""))
+        if tok_bem <= tok_c or tok_c <= tok_bem:
+            return cand
+
+    # 4. Fuzzy — só com candidatos do mesmo 1º nome (rápido)
+    if candidatos:
+        melhor = None
+        melhor_sim = 0
+        for cand in candidatos:
+            sim = SequenceMatcher(None, nn, norm_nome(cand.get("nome", ""))).ratio()
+            if sim > melhor_sim:
+                melhor_sim = sim
+                melhor = cand
+
+        if melhor_sim >= 0.85:
+            return melhor
+        if melhor_sim >= 0.70 and melhor:
+            return melhor
+
+    return None
 
 
 # ============================================================
@@ -239,7 +452,6 @@ def _partes_nome(nome):
 # ============================================================
 
 def ferias_ativas_set():
-    """Set de nomes completos normalizados em férias hoje."""
     ferias = load_ferias()
     ativos = set()
     hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -258,7 +470,6 @@ def ferias_ativas_set():
 
 
 def ferias_ativas_chaves():
-    """Set de (1º nome, último nome) de quem está de férias hoje."""
     ferias = load_ferias()
     chaves = set()
     hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -283,7 +494,6 @@ def ferias_ativas_chaves():
 
 
 def _nome_em_ferias(nome, chaves):
-    """Verifica se 'nome' bate com alguma chave (1º + último) de férias."""
     if not nome:
         return False
     partes = norm_nome(nome).split()
@@ -295,8 +505,6 @@ def _nome_em_ferias(nome, chaves):
 
 
 def ferias_em_andamento_lista():
-    """Retorna lista enriquecida SÓ das férias em andamento hoje (lê ferias.json).
-       Usada na aba 'Em férias' da Recepção."""
     ferias = load_ferias()
     hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     lista = []
@@ -326,153 +534,91 @@ def ferias_em_andamento_lista():
 
 
 # ============================================================
-# AGRUPAMENTO AUTOMÁTICO DE PESSOAS
+# AGRUPAMENTO OTIMIZADO (usa índices + cache)
 # ============================================================
 
 def _pessoas_agrupadas():
     """
-    Une bens + funcionários por pessoa aplicando 2 regras (a Regra 3 foi REMOVIDA):
-      1) nome completo exato igual
-      2) mesmo (1º + último) e (um sem depto OU mesmo depto)
+    Agrupa usando FUNCIONÁRIOS como base oficial.
+    OTIMIZADO: O(n) em vez de O(n²). Usa índices pré-calculados.
     """
+    global _cache_pessoas
+
+    agora = time.time()
+    if (_cache_pessoas["dados"] is not None and
+            agora - _cache_pessoas["timestamp"] < CACHE_PESSOAS_TTL):
+        return _cache_pessoas["dados"]
+
     bens = load_bens()
     funcs = load_funcs()
-
-    registros = []
-    for b in bens:
-        nome = normalizar(b.get("responsavel") or "")
-        if not nome:
-            continue
-        registros.append({
-            "nome": nome,
-            "departamento": (b.get("departamento") or "").strip(),
-            "ramal": (b.get("ramal") or "").strip(),
-            "cargo": "",
-            "bens": [b],
-        })
-    for f in funcs:
-        nome = normalizar(f.get("nome") or "")
-        if not nome:
-            continue
-        registros.append({
-            "nome": nome,
-            "departamento": (f.get("setor") or "").strip(),
-            "ramal": "",
-            "cargo": (f.get("cargo") or "").strip(),
-            "bens": [],
-        })
-
-    n = len(registros)
-    if n == 0:
-        return []
-
-    parent = list(range(n))
-
-    def find(x):
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]
-            x = parent[x]
-        return x
-
-    def union(a, b):
-        ra, rb = find(a), find(b)
-        if ra != rb:
-            parent[rb] = ra
-
-    def dep_norm(r):
-        return norm_depto(r.get("departamento") or "")
-
-    # -------- Regra 1: nome completo EXATO igual --------
-    por_nome = defaultdict(list)
-    for i, r in enumerate(registros):
-        por_nome[norm_nome(r["nome"])].append(i)
-    for idxs in por_nome.values():
-        for i in idxs[1:]:
-            union(idxs[0], i)
-
-    # -------- Regra 2: (1º + último) iguais + depto compatível --------
-    por_1o_ult = defaultdict(list)
-    for i, r in enumerate(registros):
-        p1, pu = _partes_nome(r["nome"])
-        if p1:
-            por_1o_ult[(p1, pu)].append(i)
-
-    for idxs in por_1o_ult.values():
-        if len(idxs) < 2:
-            continue
-        por_dep = defaultdict(list)
-        sem_dep = []
-        for i in idxs:
-            d = dep_norm(registros[i])
-            if d:
-                por_dep[d].append(i)
-            else:
-                sem_dep.append(i)
-
-        if len(por_dep) <= 1:
-            for i in idxs[1:]:
-                union(idxs[0], i)
-        else:
-            if sem_dep and por_dep:
-                maior = max(por_dep.items(), key=lambda x: len(x[1]))[0]
-                por_dep[maior].extend(sem_dep)
-            for grupo in por_dep.values():
-                for i in grupo[1:]:
-                    union(grupo[0], i)
-
-    # (Regra 3 REMOVIDA — causava falsos positivos como Gerson)
-
-    # -------- Consolida --------
-    grupos = defaultdict(list)
-    for i in range(n):
-        grupos[find(i)].append(registros[i])
-
     chaves_ferias = ferias_ativas_chaves()
+
+    # Base: 1 entrada por funcionário
+    por_func = {}
+    for f in funcs:
+        try:
+            fid = int(f.get("id"))
+        except (ValueError, TypeError):
+            continue
+        por_func[fid] = {
+            "funcionario_id": fid,
+            "nome": f.get("nome", ""),
+            "cargo": f.get("cargo", ""),
+            "departamento": f.get("setor", ""),
+            "ramal": "",
+            "bens": [],
+            "vinculado": True,
+        }
+
+    # Órfãos agrupados por nome normalizado
+    orfaos = {}
+
+    for b in bens:
+        nome_bem = normalizar(b.get("responsavel") or "")
+        if not nome_bem or _e_coletivo(nome_bem):
+            continue
+
+        func = _achar_funcionario(nome_bem)
+        if func:
+            try:
+                fid = int(func["id"])
+            except (ValueError, TypeError):
+                fid = None
+            if fid and fid in por_func:
+                por_func[fid]["bens"].append(b)
+                if not por_func[fid]["ramal"] and b.get("ramal"):
+                    por_func[fid]["ramal"] = b.get("ramal").strip()
+                continue
+
+        chave = norm_nome(nome_bem)
+        if chave not in orfaos:
+            orfaos[chave] = {
+                "funcionario_id": None,
+                "nome": nome_bem,
+                "cargo": "",
+                "departamento": (b.get("departamento") or "").strip(),
+                "ramal": (b.get("ramal") or "").strip(),
+                "bens": [],
+                "vinculado": False,
+            }
+        orfaos[chave]["bens"].append(b)
+
     resultado = []
+    for p in por_func.values():
+        p["em_ferias"] = _nome_em_ferias(p["nome"], chaves_ferias)
+        resultado.append(p)
 
-    for grupo in grupos.values():
-        nome_final = max((g["nome"] for g in grupo), key=len, default="")
+    for p in orfaos.values():
+        p["em_ferias"] = _nome_em_ferias(p["nome"], chaves_ferias)
+        resultado.append(p)
 
-        cargo_final = ""
-        for g in sorted(grupo, key=lambda x: -len(x["nome"])):
-            if g["cargo"]:
-                cargo_final = g["cargo"]
-                break
-
-        deps = Counter()
-        for g in grupo:
-            d = (g["departamento"] or "").strip()
-            if d:
-                deps[d] += 1
-        depto_final = deps.most_common(1)[0][0] if deps else ""
-
-        ramal_final = ""
-        for g in grupo:
-            if g["ramal"]:
-                ramal_final = g["ramal"]
-                break
-
-        todos_bens = []
-        for g in grupo:
-            todos_bens.extend(g["bens"])
-
-        em_ferias = False
-        for g in grupo:
-            if _nome_em_ferias(g["nome"], chaves_ferias):
-                em_ferias = True
-                break
-
-        resultado.append({
-            "nome": nome_final,
-            "cargo": cargo_final,
-            "departamento": depto_final,
-            "ramal": ramal_final,
-            "em_ferias": em_ferias,
-            "bens": todos_bens,
-        })
-
+    _cache_pessoas = {"timestamp": agora, "dados": resultado}
     return resultado
 
+
+# ============================================================
+# MOVIMENTAÇÕES
+# ============================================================
 
 CABECALHO_MOV = ["data", "bem_id", "categoria", "patrimonio", "hostname",
                  "de_responsavel", "para_responsavel", "de_departamento",
@@ -488,28 +634,6 @@ def registrar_movimento(b, de_resp, de_dep, para_resp, para_dep, obs):
         w.writerow([datetime.now().strftime("%Y-%m-%d %H:%M"), b.get("id"),
                     b.get("categoria"), b.get("patrimonio"), b.get("hostname"),
                     de_resp, para_resp, de_dep, para_dep, obs])
-
-
-def agrupar_por_funcionario():
-    pessoas = _pessoas_agrupadas()
-    teia = []
-    for p in pessoas:
-        if not p["bens"]:
-            continue
-        cats = defaultdict(int)
-        for it in p["bens"]:
-            cats[it.get("categoria") or "Outros"] += 1
-        teia.append({
-            "nome": p["nome"],
-            "cargo": p["cargo"],
-            "setor": p["departamento"],
-            "total": len(p["bens"]),
-            "por_categoria": dict(sorted(cats.items(), key=lambda x: -x[1])),
-            "bens": p["bens"],
-        })
-    teia.sort(key=lambda x: (-x["total"], x["nome"]))
-    return teia
-
 
 def _dados_graficos():
     bens = load_bens()
@@ -599,7 +723,7 @@ def dashboard():
     return render_template(
         "dashboard.html",
         total=len(bens),
-        total_func=len(_pessoas_agrupadas()),
+        total_func=len(funcs),
         total_dep=len(deps),
         com_responsavel=com_resp,
         sem_responsavel=sem_resp,
@@ -612,29 +736,26 @@ def dashboard():
 @app.route("/bens")
 def bens_view():
     bens = load_bens()
-    todos = load_bens()
     q = (request.args.get("q") or "").lower()
     cat = request.args.get("cat") or ""
     dep = request.args.get("dep") or ""
     resp = request.args.get("resp") or ""
     if q:
-        bens = [b for b in bens if q in json.dumps(
-            b, ensure_ascii=False).lower()]
+        bens = [b for b in bens if q in json.dumps(b, ensure_ascii=False).lower()]
     if cat:
         bens = [b for b in bens if (b.get("categoria") or "") == cat]
     if dep:
         bens = [b for b in bens if (b.get("departamento") or "") == dep]
     if resp:
         bens = [b for b in bens if normalizar(b.get("responsavel")) == resp]
+
+    todos = load_bens()
     return render_template(
         "bens.html",
         bens=bens,
-        categorias=sorted({b.get("categoria")
-                          for b in todos if b.get("categoria")}),
-        departamentos=sorted({b.get("departamento")
-                             for b in todos if b.get("departamento")}),
-        responsaveis=sorted({normalizar(b.get("responsavel"))
-                            for b in todos if b.get("responsavel")}),
+        categorias=sorted({b.get("categoria") for b in todos if b.get("categoria")}),
+        departamentos=sorted({b.get("departamento") for b in todos if b.get("departamento")}),
+        responsaveis=sorted({normalizar(b.get("responsavel")) for b in todos if b.get("responsavel")}),
         filtros={"q": q, "cat": cat, "dep": dep, "resp": resp},
     )
 
@@ -651,8 +772,7 @@ def bens_salvar():
     if bid:
         for i, b in enumerate(bens):
             if b.get("id") == bid:
-                bens[i] = {**b, **item,
-                           "atualizado_em": datetime.now().isoformat()}
+                bens[i] = {**b, **item, "atualizado_em": datetime.now().isoformat()}
                 break
         msg = "Bem atualizado!"
     else:
@@ -663,6 +783,39 @@ def bens_salvar():
     save_bens(bens)
     return jsonify({"ok": True, "msg": msg})
 
+@app.route("/bens/transferir", methods=["POST"])
+def bens_transferir():
+    """Transfere um bem para outro responsável/departamento e registra no histórico."""
+    d = request.get_json(force=True, silent=True) or {}
+    bid = d.get("id")
+    novo_resp = normalizar(d.get("novo_responsavel") or "")
+    novo_dep = normalizar(d.get("novo_departamento") or "")
+    obs = normalizar(d.get("obs") or "")
+
+    if bid is None:
+        return jsonify({"ok": False, "msg": "ID do bem obrigatório"})
+    if not novo_resp:
+        return jsonify({"ok": False, "msg": "Informe o novo responsável"})
+
+    bens = load_bens()
+    achou = False
+    for b in bens:
+        if b.get("id") == bid:
+            ar = b.get("responsavel") or ""
+            ad = b.get("departamento") or ""
+            b["responsavel"] = novo_resp
+            if novo_dep:
+                b["departamento"] = novo_dep
+            b["atualizado_em"] = datetime.now().isoformat()
+            registrar_movimento(b, ar, ad, b["responsavel"], b["departamento"], obs)
+            achou = True
+            break
+
+    if not achou:
+        return jsonify({"ok": False, "msg": "Bem não encontrado"})
+
+    save_bens(bens)
+    return jsonify({"ok": True, "msg": f"Bem transferido para {novo_resp}!"})
 
 @app.route("/bens/excluir/<int:bid>", methods=["POST"])
 def bens_excluir(bid):
@@ -739,19 +892,36 @@ def api_bens_planilha_lote():
 
 @app.route("/funcionarios")
 def funcionarios_view():
-    pessoas = _pessoas_agrupadas()
-    funcs_nomes = {norm_nome(f.get("nome") or "") for f in load_funcs()}
+    funcs = load_funcs()
+    bens = load_bens()
+
+    # Mapa: id → qtd bens
+    cont_bens = defaultdict(int)
+    for b in bens:
+        nome_bem = normalizar(b.get("responsavel") or "")
+        if not nome_bem or _e_coletivo(nome_bem):
+            continue
+        f = _achar_funcionario(nome_bem)
+        if f:
+            try:
+                cont_bens[int(f["id"])] += 1
+            except (ValueError, TypeError):
+                pass
+
     resultado = []
-    for p in pessoas:
-        if norm_nome(p["nome"]) in funcs_nomes or any(
-            norm_nome(g) in funcs_nomes for g in [p["nome"]]
-        ):
-            resultado.append({
-                "nome": p["nome"],
-                "cargo": p["cargo"],
-                "setor": p["departamento"],
-                "total_bens": len(p["bens"]),
-            })
+    for f in funcs:
+        try:
+            fid = int(f.get("id"))
+        except (ValueError, TypeError):
+            continue
+        resultado.append({
+            "id": fid,
+            "nome": f.get("nome", ""),
+            "cargo": f.get("cargo", ""),
+            "setor": f.get("setor", ""),
+            "total_bens": cont_bens.get(fid, 0),
+        })
+
     resultado.sort(key=lambda x: x["nome"].lower())
     return render_template("funcionarios.html", funcionarios=resultado)
 
@@ -764,29 +934,87 @@ def funcionarios_salvar():
     item = {k: normalizar(d.get(k)) for k in campos}
     if not item["nome"]:
         return jsonify({"ok": False, "msg": "Nome obrigatorio"})
-    idx = d.get("idx")
-    if idx is not None and 0 <= idx < len(funcs):
-        funcs[idx] = {**funcs[idx], **item}
-        msg = "Atualizado!"
+
+    fid = d.get("id")
+    if fid:
+        for f in funcs:
+            if str(f.get("id")) == str(fid):
+                f.update(item)
+                break
+        msg = "Funcionário atualizado!"
     else:
+        item["id"] = next_id(funcs)
         funcs.append(item)
-        msg = "Cadastrado!"
+        msg = "Funcionário cadastrado!"
+
     save_funcs(funcs)
     return jsonify({"ok": True, "msg": msg})
 
 
-@app.route("/funcionarios/excluir/<int:idx>", methods=["POST"])
-def funcionarios_excluir(idx):
+@app.route("/funcionarios/excluir/<int:fid>", methods=["POST"])
+def funcionarios_excluir(fid):
+    """Exclui funcionário por ID (mais confiável que índice)."""
     funcs = load_funcs()
-    if 0 <= idx < len(funcs):
-        funcs.pop(idx)
-        save_funcs(funcs)
-    return jsonify({"ok": True})
+    total_antes = len(funcs)
+    funcs = [f for f in funcs if int(f.get("id") or 0) != fid]
+
+    if len(funcs) == total_antes:
+        return jsonify({"ok": False, "msg": "Funcionário não encontrado"})
+
+    save_funcs(funcs)
+    return jsonify({"ok": True, "msg": "Funcionário excluído!"})
 
 
-@app.route("/teia")
-def teia_view():
-    return render_template("teia.html", teia=agrupar_por_funcionario())
+@app.route("/funcionario/<int:fid>")
+def funcionario_detalhe(fid):
+    funcs = load_funcs()
+    func = next((f for f in funcs if int(f.get("id") or 0) == fid), None)
+    if not func:
+        return "Funcionário não encontrado", 404
+
+    bens = load_bens()
+    bens_do_func = []
+    for b in bens:
+        nome_bem = normalizar(b.get("responsavel") or "")
+        if not nome_bem or _e_coletivo(nome_bem):
+            continue
+        f = _achar_funcionario(nome_bem)
+        if f and int(f.get("id") or 0) == fid:
+            bens_do_func.append(b)
+
+    return render_template("funcionario_detalhe.html",
+                           func=func,
+                           bens=bens_do_func,
+                           total=len(bens_do_func))
+
+
+@app.route("/api/funcionarios/orfaos")
+def api_funcionarios_orfaos():
+    bens = load_bens()
+    orfaos = defaultdict(list)
+
+    for b in bens:
+        nome_bem = normalizar(b.get("responsavel") or "")
+        if not nome_bem or _e_coletivo(nome_bem):
+            continue
+        f = _achar_funcionario(nome_bem)
+        if not f:
+            orfaos[nome_bem].append({
+                "id": b.get("id"),
+                "patrimonio": b.get("patrimonio", ""),
+                "departamento": b.get("departamento", ""),
+            })
+
+    return jsonify({
+        "ok": True,
+        "orfaos": [{"nome": k, "qtd": len(v), "bens": v} for k, v in orfaos.items()],
+        "total": sum(len(v) for v in orfaos.values()),
+    })
+
+
+@app.route("/organograma")
+def organograma_view():
+    return render_template("organograma.html")
 
 
 @app.route("/movimentar")
@@ -838,8 +1066,7 @@ def movimentacoes_view():
             linhas = list(csv.DictReader(f))
     q = (request.args.get("q") or "").lower()
     if q:
-        linhas = [l for l in linhas
-                  if q in json.dumps(l, ensure_ascii=False).lower()]
+        linhas = [l for l in linhas if q in json.dumps(l, ensure_ascii=False).lower()]
     return render_template("movimentacoes.html",
                            movimentacoes=list(reversed(linhas)),
                            total=len(linhas), filtros={"q": q})
@@ -852,10 +1079,6 @@ def movimentacoes_exportar():
     return send_file(ARQ_MOV, mimetype="text/csv", as_attachment=True,
                      download_name="movimentacoes.csv")
 
-
-# ============================================================
-# FÉRIAS - VIEW COM STATUS CALCULADO
-# ============================================================
 
 @app.route("/ferias")
 def ferias_view():
@@ -961,13 +1184,8 @@ def ferias_excluir(idx):
     return jsonify({"ok": True})
 
 
-# ============================================================
-# RAMAIS - CORRIGIDO (responsaveis como lista)
-# ============================================================
-
 @app.route("/ramais")
 def ramais_view():
-    """Monta lista de ramais a partir dos BENS brutos (não agrupados)."""
     bens = load_bens()
     chaves_ferias = ferias_ativas_chaves()
 
@@ -1149,11 +1367,9 @@ def api_config_email_salvar():
 def api_config_email_testar():
     d = request.get_json(force=True, silent=True) or {}
     cfg = email_sender.carregar_config()
-    destinatarios = d.get("destinatarios") or cfg.get(
-        "destinatarios_ferias") or []
+    destinatarios = d.get("destinatarios") or cfg.get("destinatarios_ferias") or []
     if isinstance(destinatarios, str):
-        destinatarios = [x.strip()
-                         for x in destinatarios.split(",") if x.strip()]
+        destinatarios = [x.strip() for x in destinatarios.split(",") if x.strip()]
     if not destinatarios:
         return jsonify({"ok": False, "msg": "Informe pelo menos 1 destinatário."})
     corpo = """
@@ -1200,7 +1416,7 @@ def api_ramais_agrupados():
         resp = normalizar(b.get("responsavel") or "")
         if not ramal or not resp:
             continue
-        chave = f"{norm_nome(resp)}"
+        chave = norm_nome(resp)
         if chave in vistos[(dep, ramal)]:
             continue
         vistos[(dep, ramal)].add(chave)
@@ -1298,7 +1514,6 @@ def api_trocar_senha():
 
 @app.route("/recepcao")
 def recepcao_view():
-    """Rende duas abas: Colaboradores (agrupados) e Em férias (lê ferias.json)."""
     pessoas = _pessoas_agrupadas()
     registros = []
     for p in pessoas:

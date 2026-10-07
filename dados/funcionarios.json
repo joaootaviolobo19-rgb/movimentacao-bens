@@ -2,1346 +2,1201 @@
   {
     "nome": "PATRICIA INES BALDASSO",
     "cargo": "Advogado",
-    "setor": "Juridico"
+    "setor": "Juridico",
+    "id": 1
   },
   {
     "nome": "LEANDRO MARTINS BONES",
     "cargo": "Almoxarife Técnico",
-    "setor": "Operacional"
-  },
-  {
-    "nome": "MAURECI FERREIRA PIRES",
-    "cargo": "Almoxarife Técnico",
-    "setor": "Operacional"
-  },
-  {
-    "nome": "PAULO DA SILVA BANDEIRA",
-    "cargo": "Almoxarife Técnico",
-    "setor": "Operacional"
-  },
-  {
-    "nome": "AMANDA GOMES PACHECO SEVERO",
-    "cargo": "Analista Administrativo(a)",
-    "setor": "Administração"
+    "setor": "Operacional",
+    "id": 2
   },
   {
     "nome": "DAISY DA SILVA RUSSO",
     "cargo": "Analista Administrativo(a)",
-    "setor": "Administração"
+    "setor": "Administração",
+    "id": 6
   },
   {
     "nome": "SABRINA CARVALHO DA SILVA",
     "cargo": "Analista Administrativo(a)",
-    "setor": "Administração"
+    "setor": "Administração",
+    "id": 7
   },
   {
     "nome": "FABIANA ALMINHANA",
     "cargo": "Analista Comercial",
-    "setor": "Comercial"
+    "setor": "Comercial",
+    "id": 8
   },
   {
     "nome": "ISABEL CRISTINA GIUSTI DA SILVA",
     "cargo": "Analista Comercial",
-    "setor": "Comercial"
+    "setor": "Comercial",
+    "id": 9
   },
   {
     "nome": "SUSI SILVETE DA SILVA",
     "cargo": "Analista Contábil",
-    "setor": "Contabilidade"
+    "setor": "Contabilidade",
+    "id": 10
   },
   {
     "nome": "RODRIGO CHAGAS FREITAS",
     "cargo": "Analista de Criação",
-    "setor": "Marketing"
+    "setor": "Marketing",
+    "id": 11
   },
   {
     "nome": "FABIO ANDERSON RUBIRA GONZAGA",
     "cargo": "Analista de Depto Pessoal",
-    "setor": "Recursos Humanos"
+    "setor": "Recursos Humanos",
+    "id": 12
   },
   {
     "nome": "THIAGO FERREIRA WIEDEMANN",
     "cargo": "ANALISTA DE MARKETING",
-    "setor": "Marketing"
+    "setor": "Marketing",
+    "id": 13
   },
   {
     "nome": "GUILHERME DE SOUZA TEIXEIRA",
     "cargo": "Analista Financeiro",
-    "setor": "Financeiro"
+    "setor": "Financeiro",
+    "id": 14
   },
   {
     "nome": "JOAO OTAVIO DA SILVA LOBO",
     "cargo": "Aprendiz",
-    "setor": "T.I"
+    "setor": "T.I",
+    "id": 15
   },
   {
     "nome": "GIOVANA GOULARTE PADILHA",
     "cargo": "Aprendiz",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 16
   },
   {
     "nome": "NATAN MOREIRA RAMIRO",
     "cargo": "Aprendiz",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 17
   },
   {
     "nome": "PAOLA RODRIGUES DOS SANTOS",
     "cargo": "Aprendiz",
-    "setor": "Marketing"
+    "setor": "Marketing",
+    "id": 18
   },
   {
     "nome": "MILLENA BEATRIZ PREUSS DE FREITAS",
     "cargo": "Aprendiz",
-    "setor": "Recursos Humanos"
+    "setor": "Recursos Humanos",
+    "id": 19
   },
   {
     "nome": "ALCEU SAMUEL VETTORI",
     "cargo": "Apresentador",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 20
   },
   {
     "nome": "LEO HENRIQUE SABALLA JUNIOR",
     "cargo": "Apresentador",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 21
   },
   {
     "nome": "LEONARDO BARCELOS LARA",
     "cargo": "Apresentador",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 22
   },
   {
     "nome": "VANESSA DE ALMEIDA PIRES",
     "cargo": "Apresentadora",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 23
   },
   {
     "nome": "CHARLES RENAN FALERO FERREIRA",
     "cargo": "Arquivista de Tapes",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 24
   },
   {
     "nome": "JOSENILDE DE LIMA GOMES",
     "cargo": "Arquivista de Tapes",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 25
   },
   {
     "nome": "AMANDA DE OLIVEIRA MOREIRA",
     "cargo": "Assistente Comercial",
-    "setor": "Comercial"
+    "setor": "Comercial",
+    "id": 26
   },
   {
     "nome": "MIRIAM SANTOS MARQUES",
     "cargo": "Assistente de Diretoria",
-    "setor": "Diretoria"
+    "setor": "Diretoria",
+    "id": 27
   },
   {
     "nome": "GABRIEL DE CAMPOS MACHADO",
     "cargo": "Assistente de Marketing",
-    "setor": "Marketing"
+    "setor": "Marketing",
+    "id": 28
   },
   {
     "nome": "MARCO ANTONIO RODRIGUES BREGON",
     "cargo": "Assistente de Produção",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 29
   },
   {
     "nome": "VAGNER MACHADO HANAUER",
     "cargo": "Assistente de Produção",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 30
   },
   {
     "nome": "AMAILSON DA ROSA GAWLINSKI",
     "cargo": "Assistente de Suporte",
-    "setor": "TI - Tecnologia da Informação"
+    "setor": "TI - Tecnologia da Informação",
+    "id": 31
   },
   {
     "nome": "CRISTIANO SILVA D OLIVEIRA",
     "cargo": "Auxiliar Camera U.P.E.",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 32
   },
   {
     "nome": "EDSON DA ROSA",
     "cargo": "Auxiliar Camera U.P.E.",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 33
   },
   {
     "nome": "ELIZEU ROGERIO XAVIER DO CANTO",
     "cargo": "Auxiliar Camera U.P.E.",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 34
   },
   {
     "nome": "JOAO BATISTA VERZANI LAUD",
     "cargo": "Auxiliar Camera U.P.E.",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 35
   },
   {
     "nome": "JOSEMAR BRITTO DO CARMO",
     "cargo": "Auxiliar Camera U.P.E.",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 36
   },
   {
     "nome": "LIDIO GILBERTO QUINTANA MARQUES",
     "cargo": "Auxiliar Camera U.P.E.",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 37
   },
   {
     "nome": "MARIO JORGE VIANA DE LIMA",
     "cargo": "Auxiliar Camera U.P.E.",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 38
   },
   {
     "nome": "VALDIR GOMES DE FREITAS JUNIOR",
     "cargo": "Auxiliar Camera U.P.E.",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 39
   },
   {
     "nome": "WILSON BAPTISTA JUNIOR",
     "cargo": "Auxiliar Camera U.P.E.",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 40
   },
   {
     "nome": "RODRIGO SCURSEL BETTIO",
     "cargo": "Auxiliar Camera U.P.E.",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 41
   },
   {
     "nome": "FRANCIELLE MACHADO DA ROSA",
     "cargo": "Auxiliar Comercial",
-    "setor": "Marketing"
+    "setor": "Marketing",
+    "id": 42
   },
   {
     "nome": "CRISTIANE GONÇALVES DA SILVA BORGES",
     "cargo": "Auxiliar de Limpeza",
-    "setor": "Administração"
+    "setor": "Administração",
+    "id": 43
   },
   {
     "nome": "ELIANE DA SILVA TATSCH",
     "cargo": "Auxiliar de Limpeza",
-    "setor": "Administração"
+    "setor": "Administração",
+    "id": 44
   },
   {
     "nome": "SUELEN AJARDO",
     "cargo": "Auxiliar de Limpeza",
-    "setor": "Administração"
+    "setor": "Administração",
+    "id": 45
   },
   {
     "nome": "ESTER OLIVEIRA VASSOLER",
     "cargo": "Auxiliar de Mídias Sociais",
-    "setor": "Comercial"
+    "setor": "Comercial",
+    "id": 46
   },
   {
     "nome": "MARIA EDUARDA SILVEIRA DORNELLES",
     "cargo": "Auxiliar de Opec",
-    "setor": "Operações Comerciais"
+    "setor": "Operações Comerciais",
+    "id": 47
   },
   {
     "nome": "CAROLINA MONTEIRO LOPES",
     "cargo": "Auxiliar de Recursos Humanos",
-    "setor": "Recursos Humanos"
+    "setor": "Recursos Humanos",
+    "id": 48
   },
   {
     "nome": "NICOLLY VARGAS DE SOUZA",
     "cargo": "Auxiliar Financeiro",
-    "setor": "Financeiro"
+    "setor": "Financeiro",
+    "id": 49
   },
   {
     "nome": "GUILHERME STREVENSKI SOUZA",
     "cargo": "Auxiliar Técnico",
-    "setor": "Técnica"
+    "setor": "Técnica",
+    "id": 50
   },
   {
     "nome": "CARLA ROSANE PACHECO SEABRA",
     "cargo": "Chefe de Produção",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 51
   },
   {
     "nome": "JOSE HENRIQUE ROSITO FERRARO",
     "cargo": "Chefe de Redação",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 52
   },
   {
     "nome": "ALEXSANDER PEIXOTO MACHADO",
     "cargo": "Chefe de Reportagem",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 53
   },
   {
     "nome": "ANA LUISA PROCOPIO CORREA",
     "cargo": "Chefe de Reportagem",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 54
   },
   {
     "nome": "VIVIAN LEAL DA SILVEIRA",
     "cargo": "Chefe de Reportagem",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 55
   },
   {
     "nome": "ADILSON LUIS ROSA CORREA",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 56
   },
   {
     "nome": "DIEGO DA CRUZ VIEIRA",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 57
   },
   {
     "nome": "DIEGO FRANTZ MEDEIROS",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 58
   },
   {
     "nome": "FLAVIO LUIS DOS SANTOS DA SILVA",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 59
   },
   {
     "nome": "FRANCISCO DOS ANJOS RODRIGUES",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 60
   },
   {
     "nome": "GERSON LUIS GUIMARAES ANTUNES",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 61
   },
   {
     "nome": "GERSON PAZ DE OLIVEIRA",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 62
   },
   {
     "nome": "HUGO ROGERIO RAMIRES DE SOUZA",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 63
   },
   {
     "nome": "JORGE LUIS DA SILVA",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 64
   },
   {
     "nome": "LEONARDO RICARDO AGUIAR",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 65
   },
   {
     "nome": "LUIZ HENRIQUE BARCELLOS DOS SANTOS",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 66
   },
   {
     "nome": "MAURICIO DA SILVA SILVA",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 67
   },
   {
     "nome": "RAFAEL GOMES BAPTISTA",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 68
   },
   {
     "nome": "SANDRO BARZI",
     "cargo": "Cinegrafista",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 69
   },
   {
     "nome": "EVERTON ANDRE BATISTA LOPES",
     "cargo": "Comunicador",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 70
   },
   {
     "nome": "VALDIR STANZIONE",
     "cargo": "Contador",
-    "setor": "Contabilidade"
+    "setor": "Contabilidade",
+    "id": 71
   },
   {
     "nome": "TIAGO PERONI",
     "cargo": "Coordenador (a) de Marketing",
-    "setor": "Marketing"
+    "setor": "Marketing",
+    "id": 72
   },
   {
     "nome": "VITOR HUGO SANTOS DA SILVA",
     "cargo": "Coordenador (a) de Opec",
-    "setor": "Operações Comerciais"
+    "setor": "Operações Comerciais",
+    "id": 73
   },
   {
     "nome": "LUIZA CLAUDIA GONCALVES",
     "cargo": "Coordenadora de Controladoria",
-    "setor": "Administração"
+    "setor": "Administração",
+    "id": 74
   },
   {
     "nome": "DIVA DOS SANTOS RODRIGUES",
     "cargo": "Copeira",
-    "setor": "Diretoria"
+    "setor": "Diretoria",
+    "id": 75
   },
   {
     "nome": "MAURICIO GODINHO DOS SANTOS",
     "cargo": "Diretor Administrativo",
-    "setor": "Administração"
+    "setor": "Administração",
+    "id": 76
   },
   {
     "nome": "WELLINGTON ALMEIDA MACHADO",
     "cargo": "Diretor Comercial",
-    "setor": "Comercial"
+    "setor": "Comercial",
+    "id": 77
   },
   {
     "nome": "FILIPE MOLL KONIG",
     "cargo": "Diretor de Imagens",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 78
   },
   {
     "nome": "GILSON ADEMIR SCHNEIDER JAQUES",
     "cargo": "Diretor de Imagens",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 79
   },
   {
     "nome": "BERNARDO BRAGA BARREIRO",
     "cargo": "Diretor de Programação",
-    "setor": "Programa"
+    "setor": "Programação",
+    "id": 80
   },
   {
     "nome": "JOAO SILVIO SILVA",
     "cargo": "Diretor Institucional",
-    "setor": "Comercial"
+    "setor": "Comercial",
+    "id": 81
   },
   {
     "nome": "GUSTAVO FRAGA BRANDAO PAULUS",
     "cargo": "Diretor Superintendente",
-    "setor": "Diretoria"
+    "setor": "Diretoria",
+    "id": 82
   },
   {
     "nome": "JERONIMO PINHEIRO PIRES",
     "cargo": "Editor Chefe",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 83
   },
   {
     "nome": "VINICIUS MAESTRI DE OLIVEIRA FREIRE",
     "cargo": "Editor Chefe",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 84
   },
   {
     "nome": "CRISTIANO LESZCZYNSKI SOUTO",
     "cargo": "Editor de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 85
   },
   {
     "nome": "GERSON LUIS VIEIRA LOPES",
     "cargo": "Editor de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 86
   },
   {
     "nome": "GIOVANE ALVES DA SILVA",
     "cargo": "Editor de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 87
   },
   {
     "nome": "JOSE LUIS VILLAR CARDOSO JUNIOR",
     "cargo": "Editor de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 88
   },
   {
     "nome": "MARCO ANTONIO FARIAS OLIVEIRA JUNIOR",
     "cargo": "Editor de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 89
   },
   {
     "nome": "MARLUANA ROSPA FERNANDES",
     "cargo": "Editor de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 90
   },
   {
     "nome": "NEI EPIFANIO PEREIRA",
     "cargo": "Editor de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 91
   },
   {
     "nome": "RAFAEL SILVEIRA DE AZEVEDO",
     "cargo": "Editor de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 92
   },
   {
     "nome": "WAGNER BELLOLI PORTO",
     "cargo": "Editor de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 93
   },
   {
     "nome": "FABIO ANDRE TEIXEIRA LEHMEN",
     "cargo": "Editor Executivo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 94
   },
   {
     "nome": "IGOR PEREIRA DE OLIVEIRA",
     "cargo": "Editor Executivo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 95
   },
   {
     "nome": "TANIRA BOLIVAR LEBEDEFF",
     "cargo": "Editor Executivo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 96
   },
   {
     "nome": "VINICIUS FARIAS DA SILVA",
     "cargo": "Editor Executivo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 97
   },
   {
     "nome": "CARMEL REIS MOSTARDEIRO",
     "cargo": "Editora Chefe",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 98
   },
   {
     "nome": "ALDREY DORNELES BARBOSA",
     "cargo": "Editora de Texto",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 99
   },
   {
     "nome": "ANA RITA SANTANNA MARINI",
     "cargo": "Editora de Texto",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 100
   },
   {
     "nome": "FERNANDA OLIVEIRA BIERHALS",
     "cargo": "Editora de Texto",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 101
   },
   {
     "nome": "FERNANDA PENNA ESPINELLI WACLAWOVSKY",
     "cargo": "Editora de Texto",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 102
   },
   {
     "nome": "JOELLEN RIBEIRO SOARES",
     "cargo": "Editora de Texto",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 103
   },
   {
     "nome": "LUISA CRISTINA MEIMES",
     "cargo": "Editora de Texto",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 104
   },
   {
     "nome": "MONIQUE MATIAS DORNELLES",
     "cargo": "Editora de Texto",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 105
   },
   {
     "nome": "ROSA MARIA TORRES AMARAL",
     "cargo": "Editora de Texto",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 106
   },
   {
     "nome": "ANA JULIA ISSE",
     "cargo": "EditoraChefe",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 107
   },
   {
     "nome": "LUIZ FERNANDO DA SILVA DE NASCIMENTO",
     "cargo": "Eletricista",
-    "setor": "Técnica"
+    "setor": "Técnica",
+    "id": 108
   },
   {
     "nome": "ADRIANO BARBOSA RESTA",
     "cargo": "Encarregado de Transporte",
-    "setor": "Transportes"
+    "setor": "Transportes",
+    "id": 109
   },
   {
     "nome": "BERNARDO DA CUNHA CONTRI",
     "cargo": "Estagiário",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 110
   },
   {
     "nome": "HENRI SOMENSI",
     "cargo": "Estagiário",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 111
   },
   {
     "nome": "JOÃO VICTOR FREITAS BATISTELA TRINDADE DA SILVA",
     "cargo": "Estagiário",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 112
   },
   {
     "nome": "MELISSA SILVEIRA PAZ",
     "cargo": "Estagiário",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 113
   },
   {
     "nome": "VICENTI CIOTTA LIMA",
     "cargo": "Estagiário",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 114
   },
   {
     "nome": "ALAN CAMPOS DE FREITAS",
     "cargo": "Executivo (a) de Contas",
-    "setor": "Comercial"
+    "setor": "Comercial",
+    "id": 115
   },
   {
     "nome": "ANA LUIZA CORREA",
     "cargo": "Executivo (a) de Contas",
-    "setor": "Comercial Vale dos Sinos/Serra"
+    "setor": "Comercial Vale dos Sinos/Serra",
+    "id": 116
   },
   {
     "nome": "MARCELO SILVEIRA GOEBEL",
     "cargo": "Executivo de Contas",
-    "setor": "comercial"
+    "setor": "comercial",
+    "id": 117
   },
   {
     "nome": "PEDRO HENRIQUE DA SILVA STEFANELLO",
     "cargo": "FIGURINISTA",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 118
   },
   {
     "nome": "GUILHERME KEPLER MACHADO",
     "cargo": "Gerente de Jornalismo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 119
   },
   {
     "nome": "DIOGENES RODRIGUES",
     "cargo": "Gerente de Operações e Engenharia",
-    "setor": "Técnica"
+    "setor": "Técnica",
+    "id": 120
   },
   {
     "nome": "FERNANDA CORNELIS D AVILA DA SILVEIRA",
     "cargo": "Gerente de Recursos Humanos",
-    "setor": "Recursos Humanos"
+    "setor": "Recursos Humanos",
+    "id": 121
   },
   {
     "nome": "DEBORA CRUZ DE ANHAIA",
     "cargo": "Gerente Financeiro",
-    "setor": "Financeiro"
+    "setor": "Financeiro",
+    "id": 122
   },
   {
     "nome": "JESSICA WEBER MEDEIROS",
     "cargo": "Locutor Apresentador Animador",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 123
   },
   {
     "nome": "CRISTIANA BEATRIZ BARBOZA DE JESUS JARDIM",
     "cargo": "Maquiadora",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 124
   },
   {
     "nome": "PAOLA BUENO SOARES",
     "cargo": "Maquiadora",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 125
   },
   {
     "nome": "ALEXANDRE FRANCA TELLES",
     "cargo": "Motorista Executivo",
-    "setor": "Diretoria"
+    "setor": "Diretoria",
+    "id": 126
   },
   {
     "nome": "FABIANO NUNES RAMOS",
     "cargo": "Operador de Áudio",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 127
   },
   {
     "nome": "GUILHERME SILVEIRA DA SILVA",
     "cargo": "Operador de Áudio",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 128
   },
   {
     "nome": "CAIO CESAR ARAUJO RODRIGUES",
     "cargo": "Operador de Caracteres",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 129
   },
   {
     "nome": "WILZA GABRIELA CANTO DOS SANTOS",
     "cargo": "Operador de Caracteres",
-    "setor": "Operacional"
-  },
-  {
-    "nome": "Wilza Gabriela Canto dos Santos",
-    "cargo": "Operador de Caracteres",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 130
   },
   {
     "nome": "FERNANDO CESAR VIANNA",
     "cargo": "Operador de Controle Mestre",
-    "setor": "Programa"
+    "setor": "Programa",
+    "id": 131
   },
   {
     "nome": "FILIPE SELISTER E SILVA",
     "cargo": "Operador de Controle Mestre",
-    "setor": "Programa"
+    "setor": "Programa",
+    "id": 132
   },
   {
     "nome": "JULIO CESAR DA SILVA CUNHA",
     "cargo": "Operador de Controle Mestre",
-    "setor": "Programa"
+    "setor": "Programa",
+    "id": 133
   },
   {
     "nome": "REGINALDO NUNES DA SILVA",
     "cargo": "Operador de Controle Mestre",
-    "setor": "Programa"
+    "setor": "Programa",
+    "id": 134
   },
   {
     "nome": "BRUNA JAQUES E SILVA XAVIER",
     "cargo": "Operador de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 135
   },
   {
     "nome": "EDUARDO RODRIGUES DE SOUZA",
     "cargo": "Operador de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 136
   },
   {
     "nome": "ELISANGELA DE ANDRADE",
     "cargo": "Operador de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 137
   },
   {
     "nome": "RODRIGO OLIVEIRA DA CRUZ",
     "cargo": "Operador de VT",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 138
   },
   {
     "nome": "BRUNA MARÇAL CABRERA",
     "cargo": "Pauteira",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 139
   },
   {
     "nome": "ALANDER AGUIAR DIAZ",
     "cargo": "Pauteiro",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 140
   },
   {
     "nome": "TIAGO PICOLOTTO MARTINEZ",
     "cargo": "Pauteiro",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 141
   },
   {
     "nome": "TOBIAS GANCEDO DE ARAUJO",
     "cargo": "Pauteiro",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 142
   },
   {
     "nome": "FELIPE CONTE ROCHA",
     "cargo": "Produtor Executivo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 143
   },
   {
     "nome": "ISRAEL ALVES CORREA",
     "cargo": "Produtor Executivo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 144
   },
   {
     "nome": "RENATO GAVA RODRIGUES",
     "cargo": "Produtor Executivo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 145
   },
   {
     "nome": "CAMILA RAFAELA DE OLIVEIRA ALEMANY",
     "cargo": "Produtora Executiva",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 146
   },
   {
     "nome": "EDIQUELI BIANCA DA SILVA",
     "cargo": "Produtora Executiva",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 147
   },
   {
     "nome": "LUMA PIRES DE OLIVEIRA",
     "cargo": "Produtora Executiva",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 148
   },
   {
     "nome": "PAULA FABYOLLA JOAQUIM MEZA",
     "cargo": "Produtora Executiva",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 149
   },
   {
     "nome": "JULIETE DA MAIA CAMILO",
     "cargo": "Recepcionista",
-    "setor": "Administração"
+    "setor": "Administração",
+    "id": 150
   },
   {
     "nome": "DAIANE DALLE TESE NUNES",
     "cargo": "Repórter",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 151
   },
   {
     "nome": "EDUARDO AUGUSTO LORO PINZON",
     "cargo": "Repórter",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 152
   },
   {
     "nome": "FELIPE BUENO DA ROSA",
     "cargo": "Repórter",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 153
   },
   {
     "nome": "JONATHA GRUTZMANN BITTENCOURT",
     "cargo": "Repórter",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 154
   },
   {
     "nome": "LILIANE DIAS PEREIRA",
     "cargo": "Repórter",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 155
   },
   {
     "nome": "MARCELI DUTRA DA SILVA",
     "cargo": "Repórter",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 156
   },
   {
     "nome": "RICARDO NASCIMENTO DE AZEREDO",
     "cargo": "Repórter",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 157
   },
   {
     "nome": "VANESSA SCHABBACH FELIPPE",
     "cargo": "Repórter",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 158
   },
   {
     "nome": "VITOR LUIZ DA COSTA",
     "cargo": "Repórter",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 159
   },
   {
     "nome": "VITORIA LEDUR MATOS",
     "cargo": "Repórter",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 160
   },
   {
     "nome": "FELIPE FONSECA MACHADO",
     "cargo": "Repórter Mojo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 161
   },
   {
     "nome": "GABRIEL COSTA SILVEIRA",
     "cargo": "Repórter Mojo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 162
   },
   {
     "nome": "LAURA ROLIM DA SILVA",
     "cargo": "Repórter Mojo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 163
   },
   {
     "nome": "MARRONE GONÇALVES DA SILVA",
     "cargo": "Repórter Mojo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 164
   },
   {
     "nome": "RODRIGO DOS SANTOS OLIVEIRA",
     "cargo": "Repórter Mojo",
-    "setor": "Jornalismo"
+    "setor": "Jornalismo",
+    "id": 165
   },
   {
     "nome": "ALEXANDRE SOARES MARQUES",
     "cargo": "Supervisor de Operações",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 166
   },
   {
     "nome": "DIOGENES FRITSCH DE MORAES",
     "cargo": "Supervisor de Operações",
-    "setor": "Operacional"
+    "setor": "Operacional",
+    "id": 167
   },
   {
     "nome": "LUIS FABIANO DA SILVA",
     "cargo": "Supervisor de Programação",
-    "setor": "Programa"
+    "setor": "Programa",
+    "id": 168
   },
   {
     "nome": "FABIO ROSA DE OLIVEIRA",
     "cargo": "Supervisor Técnico",
-    "setor": "Técnica"
+    "setor": "Técnica",
+    "id": 169
   },
   {
     "nome": "BRUNO SELAU DOS SANTOS",
     "cargo": "Supervisor(a) de T.I.",
-    "setor": "TI - Tecnologia da Informação"
+    "setor": "TI - Tecnologia da Informação",
+    "id": 170
   },
   {
     "nome": "MARCIA MACHADO DAUDT",
     "cargo": "SUPERVISORA COMERCIAL",
-    "setor": "Comercial"
+    "setor": "Comercial",
+    "id": 171
   },
   {
     "nome": "SAMIR BREUNIG FONSECA",
     "cargo": "Técnico de Estação RRT",
-    "setor": "Técnica"
+    "setor": "Técnica",
+    "id": 172
   },
   {
     "nome": "CARLOS ALBERTO GRUBEL",
     "cargo": "Técnico de Manutenção TV",
-    "setor": "Técnica"
+    "setor": "Técnica",
+    "id": 173
   },
   {
     "nome": "JOSE PACHECO POMINA",
     "cargo": "Técnico de Manutenção TV",
-    "setor": "Técnica"
+    "setor": "Técnica",
+    "id": 174
   },
   {
     "nome": "THIAGO COSTA NARDON",
     "cargo": "Técnico de Manutenção TV",
-    "setor": "Técnica"
+    "setor": "Técnica",
+    "id": 175
   },
   {
-    "nome": "T.I",
+    "nome": "Usuário Ilha 1",
     "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Usuário Frente Swicher",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Usuário  Ilha 1",
-    "cargo": "",
-    "setor": ""
+    "setor": "Jornalismo",
+    "id": 178
   },
   {
     "nome": "Usuário Ilha 2",
     "cargo": "",
-    "setor": ""
+    "setor": "Jornalismo",
+    "id": 179
   },
   {
     "nome": "Usuário Ilha 3",
     "cargo": "",
-    "setor": ""
+    "setor": "Jornalismo",
+    "id": 180
   },
   {
     "nome": "Usuário Ilha 4",
     "cargo": "",
-    "setor": ""
+    "setor": "Jornalismo",
+    "id": 181
   },
   {
     "nome": "Usuário Switcher",
     "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Gustavo Paulos",
-    "cargo": "",
-    "setor": ""
+    "setor": "Switcher",
+    "id": 182
   },
   {
     "nome": "Usuário Almoxarifado",
     "cargo": "",
-    "setor": ""
+    "setor": "Almoxarifado",
+    "id": 184
   },
   {
     "nome": "Usuário Áudio",
     "cargo": "",
-    "setor": ""
+    "setor": "Áudio",
+    "id": 185
   },
   {
     "nome": "Usuário Cabine Off",
     "cargo": "",
-    "setor": ""
+    "setor": "Cabine Off",
+    "id": 186
   },
   {
     "nome": "Usuário Camarim",
     "cargo": "",
-    "setor": ""
+    "setor": "Camarim",
+    "id": 187
   },
   {
     "nome": "Central Tecnica",
     "cargo": "",
-    "setor": ""
+    "setor": "Central Tecnica",
+    "id": 188
   },
   {
     "nome": "Meet",
     "cargo": "",
-    "setor": ""
+    "setor": "Meet",
+    "id": 189
   },
   {
     "nome": "Diretor De Camera",
     "cargo": "",
-    "setor": ""
+    "setor": "Diretor De Camera",
+    "id": 190
   },
   {
     "nome": "Portaria",
     "cargo": "",
-    "setor": ""
+    "setor": "Portaria",
+    "id": 191
   },
   {
     "nome": "Usuário Prog/Mark",
     "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Carolina Monteiro",
-    "cargo": "",
-    "setor": ""
+    "setor": "Prog/Mark",
+    "id": 192
   },
   {
     "nome": "Usuário Sala De Reunião",
     "cargo": "",
-    "setor": ""
+    "setor": "Sala De Reunião",
+    "id": 194
   },
   {
     "nome": "Play Aot",
     "cargo": "",
-    "setor": ""
+    "setor": "Switcher",
+    "id": 195
   },
   {
     "nome": "Tp",
     "cargo": "",
-    "setor": ""
+    "setor": "Switcher",
+    "id": 196
   },
   {
     "nome": "Pc Geração",
     "cargo": "",
-    "setor": ""
+    "setor": "Pc Geração",
+    "id": 197
   },
   {
     "nome": "Usuário Frente Switcher",
     "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Livre",
-    "cargo": "",
-    "setor": ""
+    "setor": "Switcher",
+    "id": 198
   },
   {
     "nome": "Usuário Master",
     "cargo": "",
-    "setor": ""
+    "setor": "Master",
+    "id": 200
   },
   {
     "nome": "Sala Tecnica",
     "cargo": "",
-    "setor": ""
+    "setor": "Sala Tecnica",
+    "id": 201
   },
   {
-    "nome": "Sabrina",
-    "cargo": "",
-    "setor": ""
+    "nome": "AMANDA GOMES PACHECO SEVERO",
+    "cargo": "Analista Administrativo(a)",
+    "setor": "Administrativo",
+    "id": 204
   },
   {
-    "nome": "Adriano Resta",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Amanda Pacheco",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Daisy",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Isabel Cristina",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Fabiana",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Amanda",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Susi",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Valdir",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Claudia",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Franciele Rosa",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Miriam",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Debora",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Guilherme",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Vitor",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Duda",
-    "cargo": "",
-    "setor": ""
+    "nome": "LUIZA CLAUDIA GONCALVES",
+    "cargo": "Controladora",
+    "setor": "Controladoria",
+    "id": 211
   },
   {
     "nome": "Usuário Portaria",
     "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Luis Fabiano",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Bernardo",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Julliete",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Fernanda Cornelis",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Fabio Anderon",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Mylena",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "João Otávio",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Amailson Gawlinski",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Samir",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Fabio",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Pacheco",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Guilherme Strevinki",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Bruno",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Tiago Ferreira",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Ester",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Gabriel Campos",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Paola Rodrigues",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Mauricio",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Rodrigo Chagas",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Silvio",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Camila Rafaela",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Felipe Conte",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Carmel Reis",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Guilherme Kepler",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Leo Henrique Saballa",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Bruna Marçal",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Igor Pereira",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Leonardo Lara",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Alander Aguiar",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Alexandre",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "José Henrique",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Joellen Ribeiro",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Bernado Da Cunha",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Fabio Andre",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Paula Fabyolla",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Vicente Ciotta",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Rosa Maria",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Fernanda Penna",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Tanira Bolivar",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Ana Rita",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Natan Moreira",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Fernanda Oliveira",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Ricardo Azeredo",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Carla Seabra",
-    "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Gava",
-    "cargo": "",
-    "setor": ""
+    "setor": "Portaria",
+    "id": 218
   },
   {
     "nome": "Sala Do T.I",
     "cargo": "",
-    "setor": ""
+    "setor": "Sala Do T.I",
+    "id": 264
   },
   {
     "nome": "Almoxarifado",
     "cargo": "",
-    "setor": ""
+    "setor": "ALMOXARIFADO",
+    "id": 265
   },
   {
     "nome": "Audio Hibrida",
     "cargo": "",
-    "setor": ""
-  },
-  {
-    "nome": "Ti",
-    "cargo": "",
-    "setor": ""
+    "setor": "Audio Hibrida",
+    "id": 266
   },
   {
     "nome": "Usuário Sala De Audio",
     "cargo": "",
-    "setor": ""
+    "setor": "Sala De Audio",
+    "id": 268
   }
 ]
