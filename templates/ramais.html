@@ -5,6 +5,7 @@
 
 {% block styles %}
 <style>
+    /* ================= TELA ================= */
     .topo {
         display: flex; align-items: center; justify-content: space-between;
         gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;
@@ -35,13 +36,39 @@
     }
     .btn-exportar:hover { background: #2a3f66; }
 
+    /* Painel de seleção para impressão */
+    .painel-filtros {
+        background: #fff; border-radius: 12px; padding: 1rem 1.2rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 1rem;
+    }
+    .painel-filtros .titulo {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .painel-filtros .titulo strong { color: #1a2a4a; font-size: 0.9rem; }
+    .painel-filtros .acoes { display: flex; gap: 0.4rem; }
+    .painel-filtros .acoes button {
+        background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569;
+        padding: 0.35rem 0.75rem; border-radius: 8px;
+        font-size: 0.78rem; font-weight: 600; cursor: pointer;
+    }
+    .painel-filtros .acoes button:hover { background: #e2e8f0; }
+    .painel-filtros .grid-checks {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.35rem 1rem;
+    }
+    .painel-filtros .item-check {
+        display: flex; align-items: center; gap: 0.5rem;
+        font-size: 0.85rem; color: #334155;
+    }
+    .painel-filtros .item-check input { cursor: pointer; }
+
+    /* Tabela */
     .tabela-card {
         background: #fff; border-radius: 12px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;
     }
-    table.ramais {
-        width: 100%; border-collapse: collapse; font-size: 0.92rem;
-    }
+    table.ramais { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
     table.ramais thead th {
         background: #f8fafc; color: #475569;
         font-weight: 600; font-size: 0.8rem;
@@ -61,37 +88,35 @@
     table.ramais tbody tr.conflito:hover { background: #ffedd5; }
 
     .badge-ramal {
-        display: inline-block;
-        background: #1d4ed8; color: white;
+        display: inline-block; background: #1d4ed8; color: white;
         padding: 4px 12px; border-radius: 6px;
-        font-weight: 700; font-size: 0.85rem;
-        letter-spacing: 0.3px;
+        font-weight: 700; font-size: 0.85rem; letter-spacing: 0.3px;
     }
     .responsavel { font-weight: 600; color: #1a2a4a; }
     .depto { color: #64748b; font-size: 0.88rem; }
     .badge-ferias {
-        display: inline-block;
-        background: #f59e0b; color: white;
+        display: inline-block; background: #f59e0b; color: white;
         padding: 3px 10px; border-radius: 6px;
         font-weight: 700; font-size: 0.75rem;
         text-transform: uppercase; letter-spacing: 0.3px;
     }
-    .vazio {
-        text-align: center; padding: 3rem 1rem; color: #94a3b8;
-    }
-    .vazio i {
-        font-size: 2.5rem; display: block; margin-bottom: 0.75rem; opacity: 0.4;
-    }
+    .vazio { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
+    .vazio i { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; opacity: 0.4; }
+
+    /* Impressão: escondido na tela */
     .impressao-ramais { display: none; }
 
+    /* ================= IMPRESSÃO ================= */
     @media print {
         @page { size: A4 portrait; margin: 0; }
+
         {% if not tem_permissao('ramais.exportar') %}
         body { display: none !important; }
         {% else %}
         html, body { width: 210mm; min-height: 297mm; background: #fff !important; }
         body { display: block !important; color: #27364e; }
-        .sidebar, .header, .topo, .tabela-card { display: none !important; }
+        .sidebar, .header, .topo, .painel-filtros, .tabela-card { display: none !important; }
+
         .app-container, .main-content, .content {
             display: block !important;
             width: 210mm !important;
@@ -101,17 +126,19 @@
             overflow: visible !important;
             box-shadow: none !important;
         }
+
         .impressao-ramais {
             display: block !important;
             width: 210mm;
             min-height: 297mm;
-            padding: 0 8mm 7mm;
+            padding: 0 6mm 6mm;
             color: #27364e;
             font-family: Arial, sans-serif;
         }
+
         .cabecalho-impressao {
-            height: 15mm;
-            margin: 0 -8mm 7mm;
+            height: 14mm;
+            margin: 0 -6mm 5mm;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -123,18 +150,47 @@
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
-        .grade-impressao {
+
+        /* Linha 1: 3 colunas */
+        .grade-destaque1 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3mm;
+            margin-bottom: 3mm;
+        }
+
+        /* Linha 2: 4 colunas */
+        .grade-destaque2 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3mm;
+            margin-bottom: 4mm;
+        }
+
+        /* Demais: 2 colunas (fluxo) */
+        .grade-demais {
             columns: 2;
             column-gap: 5mm;
             column-fill: balance;
         }
-        .grupo-impressao {
+
+        .grade-destaque1 .grupo-impressao,
+        .grade-destaque2 .grupo-impressao {
+            display: block;
+            width: auto;
+            margin: 0;
+        }
+        .grade-demais .grupo-impressao {
             display: inline-block;
             width: 100%;
+        }
+
+        .grupo-impressao {
             margin: 0 0 3.5mm;
             break-inside: avoid;
             page-break-inside: avoid;
         }
+
         .grupo-impressao h2 {
             margin: 0;
             padding: 1.2mm 2mm;
@@ -145,9 +201,13 @@
             font-size: 7pt;
             line-height: 1.2;
             text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
+
         .pessoa-impressao {
             min-height: 4.4mm;
             padding: 0.45mm 1.5mm;
@@ -165,11 +225,8 @@
         }
         .pessoa-impressao:nth-child(even) { background: #fff; }
         .nome-impressao { overflow-wrap: anywhere; }
-        .ramais-impressao {
-            display: inline-flex;
-            flex: 0 0 auto;
-            gap: 0.7mm;
-        }
+
+        .ramais-impressao { display: inline-flex; flex: 0 0 auto; gap: 0.7mm; }
         .ramal-impressao {
             padding: 0.25mm 1mm;
             border-radius: 0.6mm;
@@ -180,6 +237,7 @@
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
+
         .rodape-impressao {
             margin-top: 4mm;
             color: #596579;
@@ -217,6 +275,27 @@
         {% endif %}
     </div>
 </div>
+
+{% if tem_permissao('ramais.exportar') %}
+<div class="painel-filtros">
+    <div class="titulo">
+        <strong>Departamentos que vão aparecer no PDF</strong>
+        <div class="acoes">
+            <button type="button" onclick="toggleTodos(true)">Marcar todos</button>
+            <button type="button" onclick="toggleTodos(false)">Desmarcar todos</button>
+        </div>
+    </div>
+    <div class="grid-checks">
+        {% for grupo in grupos_ramais %}
+        <label class="item-check" for="dep_{{ loop.index }}">
+            <input class="form-check-input check-departamento" type="checkbox"
+                   value="{{ grupo.nome|e }}" id="dep_{{ loop.index }}" checked>
+            <span>{{ grupo.nome }}</span>
+        </label>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 <div class="tabela-card">
     {% if ramais %}
@@ -264,9 +343,12 @@
 {% if tem_permissao('ramais.exportar') %}
 <article class="impressao-ramais" aria-hidden="true">
     <header class="cabecalho-impressao">LISTA DE RAMAIS</header>
-    <div class="grade-impressao">
-        {% for grupo in grupos_ramais %}
-        <section class="grupo-impressao">
+
+    <!-- Linha 1: 3 colunas -->
+    {% if grupos_destaque1 %}
+    <div class="grade-destaque1">
+        {% for grupo in grupos_destaque1 %}
+        <section class="grupo-impressao" data-departamento="{{ grupo.nome|e }}">
             <h2>{{ grupo.nome }}</h2>
             {% for pessoa in grupo.pessoas %}
             <div class="pessoa-impressao">
@@ -281,7 +363,53 @@
         </section>
         {% endfor %}
     </div>
-    <footer class="rodape-impressao">Lista atualizada em {{ data_atual }} · Para atualizações, entre em contato com o departamento de TI</footer>
+    {% endif %}
+
+    <!-- Linha 2: 4 colunas -->
+    {% if grupos_destaque2 %}
+    <div class="grade-destaque2">
+        {% for grupo in grupos_destaque2 %}
+        <section class="grupo-impressao" data-departamento="{{ grupo.nome|e }}">
+            <h2>{{ grupo.nome }}</h2>
+            {% for pessoa in grupo.pessoas %}
+            <div class="pessoa-impressao">
+                <span class="nome-impressao">{{ pessoa.nome }}</span>
+                <span class="ramais-impressao">
+                    {% for ramal in pessoa.ramais %}
+                    <span class="ramal-impressao">{{ ramal }}</span>
+                    {% endfor %}
+                </span>
+            </div>
+            {% endfor %}
+        </section>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Demais: 2 colunas -->
+    {% if grupos_demais %}
+    <div class="grade-demais">
+        {% for grupo in grupos_demais %}
+        <section class="grupo-impressao" data-departamento="{{ grupo.nome|e }}">
+            <h2>{{ grupo.nome }}</h2>
+            {% for pessoa in grupo.pessoas %}
+            <div class="pessoa-impressao">
+                <span class="nome-impressao">{{ pessoa.nome }}</span>
+                <span class="ramais-impressao">
+                    {% for ramal in pessoa.ramais %}
+                    <span class="ramal-impressao">{{ ramal }}</span>
+                    {% endfor %}
+                </span>
+            </div>
+            {% endfor %}
+        </section>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <footer class="rodape-impressao">
+        Lista atualizada em {{ data_atual }} · Para atualizações, entre em contato com o departamento de TI
+    </footer>
 </article>
 {% endif %}
 
@@ -289,6 +417,7 @@
 
 {% block scripts %}
 <script>
+    /* ===== Busca ===== */
     const input = document.getElementById('buscaRamal');
     const linhas = document.querySelectorAll('.linha-item');
     const vazio = document.getElementById('vazioBusca');
@@ -303,5 +432,28 @@
         });
         if (vazio) vazio.style.display = (visiveis === 0 && linhas.length > 0) ? 'block' : 'none';
     });
+
+    /* ===== Filtro de impressão ===== */
+    function toggleTodos(marcar) {
+        document.querySelectorAll('.check-departamento').forEach(cb => cb.checked = marcar);
+        atualizarImpressao();
+    }
+
+    function atualizarImpressao() {
+        const selecionados = new Set();
+        document.querySelectorAll('.check-departamento:checked').forEach(cb => {
+            selecionados.add(cb.value);
+        });
+        document.querySelectorAll('.grupo-impressao').forEach(grupo => {
+            const dep = grupo.dataset.departamento;
+            grupo.style.display = selecionados.has(dep) ? '' : 'none';
+        });
+    }
+
+    document.querySelectorAll('.check-departamento').forEach(cb => {
+        cb.addEventListener('change', atualizarImpressao);
+    });
+
+    atualizarImpressao();
 </script>
 {% endblock %}

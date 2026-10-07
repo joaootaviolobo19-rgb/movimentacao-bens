@@ -1925,57 +1925,73 @@ def ramais_view():
     bens = load_bens()
     chaves_ferias = ferias_ativas_chaves()
     ramais = _listar_ramais(bens, chaves_ferias)
+
+    # Agrupa por departamento (uma pessoa pode aparecer em mais de um)
     por_departamento = defaultdict(list)
     for pessoa in ramais:
         departamentos = [
-            departamento.strip()
-            for departamento in pessoa["departamento"].split(",")
-            if departamento.strip()
+            d.strip() for d in pessoa["departamento"].split(",") if d.strip()
         ] or ["Sem departamento"]
-        for departamento in departamentos:
-            por_departamento[departamento].append(pessoa)
+        for d in departamentos:
+            por_departamento[d].append(pessoa)
 
-    prioridades = (
-        "SECRETARIA DE DIRETORIA",
-        "RECEPCAO",
-        "COPA",
-        "PORTARIA",
-        "SALA DE REUNIAO",
+    def _categoria_departamento(nome):
+        """Retorna (categoria, ordem_dentro_da_categoria, chave_ordenacao)."""
+        chave = norm_nome(nome)
+
+        # --- Linha 1: 3 colunas ---
+        # "DIRETOR EXECUTIVO" / "DIRETORIA EXECUTIVA"
+        if "EXECUTIV" in chave and "DIRETOR" in chave:
+            return ("destaque1", 0, chave)
+        # "DIRETOR ADMINISTRATIVO" / "DIRETORIA ADMINISTRATIVA"
+        if "ADMINISTRATIV" in chave and "DIRETOR" in chave:
+            return ("destaque1", 1, chave)
+        # "SECRETARIA DE DIRETORIA"
+        if "SECRETARIA DE DIRETORIA" in chave:
+            return ("destaque1", 2, chave)
+
+        # --- Linha 2: 4 colunas ---
+        prioridades2 = ("RECEPCAO", "COPA", "PORTARIA", "SALA DE REUNIAO")
+        for pos, palavra in enumerate(prioridades2):
+            if palavra in chave:
+                return ("destaque2", pos, chave)
+
+        # --- Demais ---
+        return ("demais", 0, chave)
+
+    grupos_ordenados = []
+    for departamento, pessoas in por_departamento.items():
+        categoria, ordem, chave = _categoria_departamento(departamento)
+        grupos_ordenados.append({
+            "nome": departamento,
+            "categoria": categoria,
+            "ordem": ordem,
+            "chave": chave,
+            "pessoas": sorted(
+                pessoas,
+                key=lambda p: (norm_nome(p["nome"]), p["nome"]),
+            ),
+        })
+
+    ordem_categoria = {"destaque1": 0, "destaque2": 1, "demais": 2}
+    grupos_ordenados.sort(
+        key=lambda g: (ordem_categoria[g["categoria"]], g["ordem"], g["chave"])
     )
 
-    def prioridade_departamento(nome):
-        chave = norm_nome(nome)
-        for posicao, prioritario in enumerate(
-            ("DIRETOR EXECUTIVO", "DIRETOR ADMINISTRATIVO")
-        ):
-            if prioritario in chave:
-                return (0, posicao, chave)
-        if "DIRETOR" in chave or "DIRETORIA" in chave:
-            return (0, 2, chave)
-        for posicao, prioritario in enumerate(prioridades, start=1):
-            if prioritario in chave:
-                return (posicao, 0, chave)
-        return (len(prioridades) + 1, 0, chave)
+    grupos_destaque1 = [g for g in grupos_ordenados if g["categoria"] == "destaque1"]
+    grupos_destaque2 = [g for g in grupos_ordenados if g["categoria"] == "destaque2"]
+    grupos_demais    = [g for g in grupos_ordenados if g["categoria"] == "demais"]
 
-    grupos_ramais = [
-        {
-            "nome": departamento,
-            "pessoas": sorted(
-                pessoas, key=lambda pessoa: (norm_nome(pessoa["nome"]), pessoa["nome"])
-            ),
-        }
-        for departamento, pessoas in sorted(
-            por_departamento.items(),
-            key=lambda item: prioridade_departamento(item[0]),
-        )
-    ]
     return render_template(
         "ramais.html",
         ramais=ramais,
-        grupos_ramais=grupos_ramais,
+        grupos_ramais=grupos_ordenados,     # usado nos checkboxes
+        grupos_destaque1=grupos_destaque1,
+        grupos_destaque2=grupos_destaque2,
+        grupos_demais=grupos_demais,
         data_atual=datetime.now().strftime("%d/%m/%Y"),
         total=len(ramais),
-        total_conflitos=sum(pessoa["conflito"] for pessoa in ramais),
+        total_conflitos=sum(1 for p in ramais if p["conflito"]),
     )
 
 
