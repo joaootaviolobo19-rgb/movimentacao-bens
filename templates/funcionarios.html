@@ -6,9 +6,11 @@
     <div class="text-muted small">
         <strong class="text-dark">{{funcionarios|length}}</strong> funcionário(s) cadastrado(s)
     </div>
+    {% if tem_permissao('funcionarios.editar') %}
     <button class="btn btn-success btn-sm" onclick="novoFunc()">
         <i class="bi bi-person-plus me-1"></i> Novo Funcionário
     </button>
+    {% endif %}
 </div>
 
 <div class="card">
@@ -19,7 +21,8 @@
                     <th>Nome</th>
                     <th>Cargo</th>
                     <th>Setor</th>
-                    <th class="text-end">Ações</th>
+                    <th class="text-center">Bens vinculados</th>
+                    {% if tem_permissao('funcionarios.editar') %}<th class="text-end">Ações</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -28,18 +31,24 @@
                     <td class="fw-semibold">{{f.nome}}</td>
                     <td class="small">{{f.cargo or '—'}}</td>
                     <td><span class="badge bg-secondary">{{f.setor or '—'}}</span></td>
+                    <td class="text-center">{{ f.total_bens }}</td>
+                    {% if tem_permissao('funcionarios.editar') %}
                     <td class="text-end text-nowrap">
                         <button class="btn btn-outline-primary btn-sm" onclick='editarFunc({{f.id}}, {{f|tojson}})' title="Editar">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-outline-primary btn-sm" onclick="excluirFunc({{f.id}})" title="Excluir">
+                        <button class="btn btn-outline-primary btn-sm"
+                                data-nome="{{ f.nome }}"
+                                onclick="excluirFunc({{f.id}}, {{f.total_bens}}, this.dataset.nome)"
+                                title="Excluir">
                             <i class="bi bi-trash"></i>
                         </button>
                     </td>
+                    {% endif %}
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="4" class="text-center text-muted py-5">
+                    <td colspan="{% if tem_permissao('funcionarios.editar') %}5{% else %}4{% endif %}" class="text-center text-muted py-5">
                         <i class="bi bi-people fs-1 d-block mb-2 opacity-50"></i>
                         Nenhum funcionário cadastrado.
                     </td>
@@ -50,6 +59,7 @@
     </div>
 </div>
 
+{% if tem_permissao('funcionarios.editar') %}
 <div class="modal fade" id="modalFunc" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -57,6 +67,7 @@
                 <h5 class="modal-title"><i class="bi bi-person me-2"></i><span id="tituloFunc">Novo Funcionário</span></h5>
                 <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
+            {% endif %}
             <div class="modal-body">
                 <input type="hidden" id="func_id">
                 <div class="mb-3">
@@ -84,6 +95,7 @@
 
 {% block scripts %}
 <script>
+{% if tem_permissao('funcionarios.editar') %}
 function novoFunc(){
     document.getElementById('tituloFunc').textContent = 'Novo Funcionário';
     document.getElementById('func_id').value = '';
@@ -122,8 +134,11 @@ async function salvarFunc(){
     }
 }
 
-async function excluirFunc(id){
-    if (!confirm('Excluir este funcionário?')) return;
+async function excluirFunc(id, totalBens, nome){
+    const detalhe = totalBens
+        ? `\n\n${totalBens} bem(ns) ainda estão atribuídos a ${nome}. A TI receberá um alerta para redistribuí-los.`
+        : '';
+    if (!confirm(`Excluir o cadastro de ${nome}?${detalhe}`)) return;
     try {
         const r = await fetch('/funcionarios/excluir/' + id, {method: 'POST'});
         const j = await r.json();
@@ -133,5 +148,6 @@ async function excluirFunc(id){
         alert('Erro de conexão.');
     }
 }
+{% endif %}
 </script>
 {% endblock %}

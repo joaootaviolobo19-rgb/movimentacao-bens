@@ -124,6 +124,7 @@
 <script>
 const BENS_POR_RESP = {{ por_resp|tojson }};
 const TODOS_BENS = {{ bens|tojson }};
+const VERSOES_BENS = {{ versoes|tojson }};
 
 let selecionados = new Set();
 
@@ -205,7 +206,10 @@ async function registrar() {
 
     const dados = {
         origem, destino, departamento_destino: dep, obs,
-        ids: Array.from(selecionados)
+        ids: Array.from(selecionados),
+        versoes: Object.fromEntries(
+            Array.from(selecionados, id => [String(id), VERSOES_BENS[String(id)]])
+        )
     };
     const r = await fetch('/movimentar/registrar', {
         method:'POST', headers:{'Content-Type':'application/json'},

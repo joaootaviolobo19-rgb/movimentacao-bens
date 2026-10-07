@@ -4,15 +4,18 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="text-muted small">
-        <strong class="text-dark">{{bens|length}}</strong> bem(ns) encontrado(s)
+        Exibindo <strong class="text-dark">{{ inicio_resultados }}–{{ fim_resultados }}</strong>
+        de {{ total_filtrado }} bem(ns)
     </div>
     <div class="d-flex gap-2">
-        <a href="/bens/exportar.csv" class="btn btn-outline-primary btn-sm">
+        {% if tem_permissao('bens.exportar') %}<a href="/bens/exportar.csv" class="btn btn-outline-primary btn-sm">
             <i class="bi bi-download me-1"></i> Exportar CSV
-        </a>
+        </a>{% endif %}
+        {% if tem_permissao('bens.editar') %}
         <button class="btn btn-success btn-sm" onclick="novoBem()">
             <i class="bi bi-plus-lg me-1"></i> Novo Bem
         </button>
+        {% endif %}
     </div>
 </div>
 
@@ -47,6 +50,20 @@
     </div>
 </form>
 
+{% if total_paginas > 1 %}
+<nav aria-label="Paginação de bens" class="d-flex justify-content-between align-items-center my-3">
+    <span class="small text-muted">Página {{ pagina }} de {{ total_paginas }}</span>
+    <ul class="pagination pagination-sm mb-0">
+        <li class="page-item {% if pagina <= 1 %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('bens_view', q=filtros.q, cat=filtros.cat, dep=filtros.dep, resp=filtros.resp, pagina=pagina-1) }}">Anterior</a>
+        </li>
+        <li class="page-item {% if pagina >= total_paginas %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('bens_view', q=filtros.q, cat=filtros.cat, dep=filtros.dep, resp=filtros.resp, pagina=pagina+1) }}">Próxima</a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+
 <div class="card">
     <div class="table-responsive">
         <table class="table mb-0">
@@ -59,12 +76,14 @@
                     <th>Departamento</th>
                     <th>Responsável</th>
                     <th>Status</th>
-                    <th class="text-end">Ações</th>
+                    {% if tem_permissao('bens.editar') %}<th class="text-end">Ações</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
             {% for b in bens %}
-                <tr data-id="{{b.id}}" data-bem='{{b|tojson}}'>
+                <tr data-id="{{b.id}}" data-bem='{{b|tojson}}'
+                    data-versao="{{ versoes[b.id|string] }}"
+                    data-movimentacoes="{{ movimentacoes_por_bem.get(b.id|string, 0) }}">
                     <td><span class="badge bg-info-subtle">{{b.categoria}}</span></td>
                     <td>
                         <strong>{{b.marca}}</strong>
@@ -81,21 +100,24 @@
                         {% elif 'DESCARTE' in s %}<span class="badge bg-warning">{{b.status}}</span>
                         {% else %}<span class="badge bg-secondary">{{b.status or '—'}}</span>{% endif %}
                     </td>
-                    <td class="text-end text-nowrap">
+                    {% if tem_permissao('bens.editar') %}<td class="text-end text-nowrap">
                         <button class="btn btn-outline-primary btn-sm" onclick="editarBem({{b.id}})" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </button>
+                        {% if tem_permissao('movimentacoes.editar') %}
                         <button class="btn btn-outline-primary btn-sm" onclick="transferirBem({{b.id}})" title="Transferir">
                             <i class="bi bi-arrow-left-right"></i>
                         </button>
+                        {% endif %}
                         <button class="btn btn-outline-primary btn-sm" onclick="excluirBem({{b.id}})" title="Excluir">
                             <i class="bi bi-trash"></i>
                         </button>
                     </td>
+                    {% endif %}
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-5">
+                    <td colspan="{% if tem_permissao('bens.editar') %}8{% else %}7{% endif %}" class="text-center text-muted py-5">
                         <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
                         Nenhum bem encontrado.
                     </td>
@@ -106,6 +128,7 @@
     </div>
 </div>
 
+{% if tem_permissao('bens.editar') %}
 <div class="modal fade" id="modalBem" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -115,6 +138,7 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" id="bem_id">
+                <input type="hidden" id="bem_versao">
                 <div class="row g-3">
                     {% for c,l in [('categoria','Categoria'),('marca','Marca'),('modelo','Modelo'),
                         ('hostname','Hostname'),('patrimonio','Patrimônio'),('serial','Serial'),
@@ -123,7 +147,14 @@
                         ('cpu','CPU'),('disco','Disco'),('ram','RAM'),('iso','ISO')] %}
                     <div class="col-md-6">
                         <label class="form-label">{{l}}</label>
+                        {% if c == 'status' %}
+                        <select id="bem_{{c}}" class="form-select form-select-sm">
+                            <option value="">Sem status</option>
+                            {% for status in status_bens %}<option value="{{ status }}">{{ status }}</option>{% endfor %}
+                        </select>
+                        {% else %}
                         <input id="bem_{{c}}" class="form-control form-control-sm">
+                        {% endif %}
                     </div>
                     {% endfor %}
                     <div class="col-12">
@@ -139,7 +170,9 @@
         </div>
     </div>
 </div>
+{% endif %}
 
+{% if tem_permissao('bens.editar') %}
 <div class="modal fade" id="modalTransf" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -147,8 +180,10 @@
                 <h5 class="modal-title"><i class="bi bi-arrow-left-right me-2"></i>Transferir Bem</h5>
                 <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
+            {% endif %}
             <div class="modal-body">
                 <input type="hidden" id="transf_id">
+                <input type="hidden" id="transf_versao">
                 <div class="mb-3">
                     <label class="form-label">Novo responsável</label>
                     <input id="transf_responsavel" class="form-control" list="listaFuncs">
@@ -176,6 +211,7 @@
 
 {% block scripts %}
 <script>
+{% if tem_permissao('bens.editar') %}
 const CAMPOS = ['categoria','marca','modelo','hostname','patrimonio','serial',
     'departamento','responsavel','ramal','ip','status','cpu','disco','ram','iso','observacao'];
 
@@ -187,15 +223,20 @@ function novoBem(){
 }
 
 function editarBem(id){
-    const bem = JSON.parse(document.querySelector(`tr[data-id="${id}"]`).dataset.bem);
+    const linha = document.querySelector(`tr[data-id="${id}"]`);
+    const bem = JSON.parse(linha.dataset.bem);
     document.getElementById('tituloModal').textContent = 'Editar Bem';
     document.getElementById('bem_id').value = id;
+    document.getElementById('bem_versao').value = linha.dataset.versao;
     CAMPOS.forEach(c => document.getElementById('bem_'+c).value = bem[c] || '');
     new bootstrap.Modal(document.getElementById('modalBem')).show();
 }
 
 async function salvarBem(){
-    const d = {id: document.getElementById('bem_id').value || null};
+    const d = {
+        id: document.getElementById('bem_id').value || null,
+        versao: document.getElementById('bem_versao').value
+    };
     CAMPOS.forEach(c => d[c] = document.getElementById('bem_'+c).value);
     const r = await fetch('/bens/salvar', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)});
     const j = await r.json();
@@ -203,14 +244,41 @@ async function salvarBem(){
 }
 
 async function excluirBem(id){
-    if (!confirm('Excluir este bem?')) return;
-    await fetch('/bens/excluir/'+id, {method:'POST'});
-    location.reload();
+    const linha = document.querySelector(`tr[data-id="${id}"]`);
+    const bem = JSON.parse(linha.dataset.bem);
+    const quantidade = Number(linha.dataset.movimentacoes || 0);
+    const identificacao = [
+        bem.categoria,
+        bem.marca,
+        bem.modelo,
+        bem.hostname ? `Hostname: ${bem.hostname}` : '',
+        bem.patrimonio ? `Patrimônio: ${bem.patrimonio}` : ''
+    ].filter(Boolean).join(' — ');
+    const confirmacao = `Excluir definitivamente este bem?\n\n${identificacao}\n\n` +
+        `${quantidade} movimentação(ões) vinculada(s) também será(ão) excluída(s). ` +
+        'Será criado um backup antes da exclusão.';
+    if (!confirm(confirmacao)) return;
+    try {
+        const resposta = await fetch('/bens/excluir/'+id, {
+            method:'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({versao: linha.dataset.versao})
+        });
+        const resultado = await resposta.json();
+        if (!resposta.ok || !resultado.ok) {
+            throw new Error(resultado.msg || 'Não foi possível excluir o bem.');
+        }
+        location.reload();
+    } catch (erro) {
+        alert(erro.message || 'Erro de conexão com o servidor.');
+    }
 }
 
 function transferirBem(id){
-    const bem = JSON.parse(document.querySelector(`tr[data-id="${id}"]`).dataset.bem);
+    const linha = document.querySelector(`tr[data-id="${id}"]`);
+    const bem = JSON.parse(linha.dataset.bem);
     document.getElementById('transf_id').value = id;
+    document.getElementById('transf_versao').value = linha.dataset.versao;
     document.getElementById('transf_responsavel').value = bem.responsavel || '';
     document.getElementById('transf_departamento').value = bem.departamento || '';
     document.getElementById('transf_obs').value = '';
@@ -220,6 +288,7 @@ function transferirBem(id){
 async function confirmarTransferencia(){
     const d = {
         id: parseInt(document.getElementById('transf_id').value),
+        versao: document.getElementById('transf_versao').value,
         novo_responsavel: document.getElementById('transf_responsavel').value,
         novo_departamento: document.getElementById('transf_departamento').value,
         obs: document.getElementById('transf_obs').value
@@ -247,5 +316,6 @@ async function confirmarTransferencia(){
         console.error(e);
     }
 }
+{% endif %}
 </script>
 {% endblock %}

@@ -2,6 +2,46 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 
+{% if alertas_funcionarios %}
+<div class="card border-warning mb-4">
+    <div class="card-header text-warning-emphasis">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        Bens pendentes após saída de funcionário
+    </div>
+    <div class="card-body">
+        {% for alerta in alertas_funcionarios %}
+        <section class="{% if not loop.last %}border-bottom pb-3 mb-3{% endif %}">
+            {% set data_criacao = alerta.criado_em[:10].split('-')|reverse|join('/') if alerta.criado_em else 'data não registrada' %}
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                <div>
+                    <strong>{{ alerta.funcionario }}</strong>
+                    <div class="small text-muted">
+                        Excluído em {{ data_criacao }}
+                        · {{ alerta.bens|length }} bem(ns) pendente(s)
+                    </div>
+                </div>
+                {% if tem_permissao('alertas.editar') %}<button class="btn btn-outline-secondary btn-sm"
+                        onclick="resolverAlertaFuncionario({{ alerta.id }}, this)">
+                    Marcar como resolvido
+                </button>{% endif %}
+            </div>
+            <ul class="mb-0 small">
+                {% for bem in alerta.bens %}
+                <li>
+                    <a href="{{ url_for('bem_detalhe', bid=bem.id) }}">
+                        Patrimônio: {{ bem.patrimonio or '—' }}
+                        · Hostname: {{ bem.hostname or '—' }}
+                        · Categoria: {{ bem.categoria or '—' }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <div class="row g-3 mb-4">
     <div class="col-md-6 col-xl">
         <div class="card metric-card metric-primary h-100">
@@ -40,6 +80,10 @@
             <div class="card-body">
                 <div class="metric-label">Sem Responsável</div>
                 <div class="metric-value">{{sem_responsavel}}</div>
+                <div class="small text-muted mt-2">
+                    Sem alocação: {{ sem_resp_sem_alocacao }}
+                    · Alocados a departamentos: {{ sem_resp_departamento }}
+                </div>
             </div>
         </div>
     </div>
@@ -96,7 +140,23 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
+async function resolverAlertaFuncionario(id, botao) {
+    botao.disabled = true;
+    try {
+        const resposta = await fetch(`/alertas-funcionarios/${id}/resolver`, { method: 'POST' });
+        const resultado = await resposta.json();
+        if (!resposta.ok || !resultado.ok) {
+            throw new Error(resultado.msg || 'Não foi possível resolver o alerta.');
+        }
+        location.reload();
+    } catch (erro) {
+        botao.disabled = false;
+        alert(erro.message || 'Erro ao resolver o alerta.');
+    }
+}
+
 const G = {{ graf|tojson }};
 
 new Chart(document.getElementById('g_cat'), {

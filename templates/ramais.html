@@ -57,6 +57,8 @@
     table.ramais tbody tr:hover { background: #fafbfc; }
     table.ramais tbody tr.ferias { background: #fffbeb; }
     table.ramais tbody tr.ferias:hover { background: #fef3c7; }
+    table.ramais tbody tr.conflito { background: #fff7ed; }
+    table.ramais tbody tr.conflito:hover { background: #ffedd5; }
 
     .badge-ramal {
         display: inline-block;
@@ -80,6 +82,114 @@
     .vazio i {
         font-size: 2.5rem; display: block; margin-bottom: 0.75rem; opacity: 0.4;
     }
+    .impressao-ramais { display: none; }
+
+    @media print {
+        @page { size: A4 portrait; margin: 0; }
+        {% if not tem_permissao('ramais.exportar') %}
+        body { display: none !important; }
+        {% else %}
+        html, body { width: 210mm; min-height: 297mm; background: #fff !important; }
+        body { display: block !important; color: #27364e; }
+        .sidebar, .header, .topo, .tabela-card { display: none !important; }
+        .app-container, .main-content, .content {
+            display: block !important;
+            width: 210mm !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            box-shadow: none !important;
+        }
+        .impressao-ramais {
+            display: block !important;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 0 8mm 7mm;
+            color: #27364e;
+            font-family: Arial, sans-serif;
+        }
+        .cabecalho-impressao {
+            height: 15mm;
+            margin: 0 -8mm 7mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #465fe8 !important;
+            color: #fff !important;
+            font-size: 13pt;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .grade-impressao {
+            columns: 2;
+            column-gap: 5mm;
+            column-fill: balance;
+        }
+        .grupo-impressao {
+            display: inline-block;
+            width: 100%;
+            margin: 0 0 3.5mm;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .grupo-impressao h2 {
+            margin: 0;
+            padding: 1.2mm 2mm;
+            border-radius: 1mm 1mm 0 0;
+            background: #465fe8 !important;
+            color: #fff !important;
+            text-align: center;
+            font-size: 7pt;
+            line-height: 1.2;
+            text-transform: uppercase;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .pessoa-impressao {
+            min-height: 4.4mm;
+            padding: 0.45mm 1.5mm;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1mm;
+            background: #f5f6f8;
+            color: #596579;
+            font-size: 6.5pt;
+            line-height: 1.2;
+            break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .pessoa-impressao:nth-child(even) { background: #fff; }
+        .nome-impressao { overflow-wrap: anywhere; }
+        .ramais-impressao {
+            display: inline-flex;
+            flex: 0 0 auto;
+            gap: 0.7mm;
+        }
+        .ramal-impressao {
+            padding: 0.25mm 1mm;
+            border-radius: 0.6mm;
+            background: #465fe8 !important;
+            color: #fff !important;
+            font-size: 6pt;
+            font-weight: 700;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .rodape-impressao {
+            margin-top: 4mm;
+            color: #596579;
+            text-align: center;
+            font-size: 6.5pt;
+            font-weight: 600;
+            break-inside: avoid;
+        }
+        {% endif %}
+    }
 </style>
 {% endblock %}
 
@@ -88,16 +198,23 @@
 <div class="topo">
     <div>
         <h5>Ramais</h5>
-        <div class="total-info">{{ total }} ramal(is) encontrado(s)</div>
+        <div class="total-info">
+            {{ total }} registro(s)
+            {% if total_conflitos %}
+            · {{ total_conflitos }} conflito(s) para revisão da TI
+            {% endif %}
+        </div>
     </div>
     <div class="d-flex gap-2 flex-wrap">
         <div class="busca">
             <i class="fas fa-search"></i>
             <input type="text" id="buscaRamal" placeholder="Buscar ramal ou responsável...">
         </div>
+        {% if tem_permissao('ramais.exportar') %}
         <button class="btn-exportar" onclick="window.print()">
             <i class="fas fa-file-pdf"></i> Exportar PDF
         </button>
+        {% endif %}
     </div>
 </div>
 
@@ -112,20 +229,22 @@
             </tr>
         </thead>
         <tbody>
-            {% for r in ramais %}
-                {% for resp in r.responsaveis %}
-                <tr class="linha-item {% if resp.em_ferias %}ferias{% endif %}"
-                    data-busca="{{ r.ramal }} {{ resp.nome|lower }} {{ r.departamento|lower }}">
+            {% for pessoa in ramais %}
+                <tr class="linha-item {% if pessoa.em_ferias %}ferias{% endif %} {% if pessoa.conflito %}conflito{% endif %}"
+                    data-busca="{{ pessoa.ramais|join(' ') }} {{ pessoa.nome|lower }} {{ pessoa.departamento|lower }}">
                     <td>
-                        <span class="badge-ramal">{{ r.ramal }}</span>
-                        {% if resp.em_ferias %}
+                        {% for ramal in pessoa.ramais %}
+                        <span class="badge-ramal">{{ ramal }}</span>
+                        {% endfor %}
+                        {% if pessoa.conflito %}
+                        <span class="badge text-bg-warning ms-2">Conflito</span>
+                        {% elif pessoa.em_ferias %}
                         <span class="badge-ferias ms-2"><i class="fas fa-umbrella-beach"></i> Férias</span>
                         {% endif %}
                     </td>
-                    <td class="responsavel">{{ resp.nome }}</td>
-                    <td class="depto">{{ r.departamento or '—' }}</td>
+                    <td class="responsavel">{{ pessoa.nome }}</td>
+                    <td class="depto">{{ pessoa.departamento or '—' }}</td>
                 </tr>
-                {% endfor %}
             {% endfor %}
         </tbody>
     </table>
@@ -141,6 +260,30 @@
     </div>
     {% endif %}
 </div>
+
+{% if tem_permissao('ramais.exportar') %}
+<article class="impressao-ramais" aria-hidden="true">
+    <header class="cabecalho-impressao">LISTA DE RAMAIS</header>
+    <div class="grade-impressao">
+        {% for grupo in grupos_ramais %}
+        <section class="grupo-impressao">
+            <h2>{{ grupo.nome }}</h2>
+            {% for pessoa in grupo.pessoas %}
+            <div class="pessoa-impressao">
+                <span class="nome-impressao">{{ pessoa.nome }}</span>
+                <span class="ramais-impressao">
+                    {% for ramal in pessoa.ramais %}
+                    <span class="ramal-impressao">{{ ramal }}</span>
+                    {% endfor %}
+                </span>
+            </div>
+            {% endfor %}
+        </section>
+        {% endfor %}
+    </div>
+    <footer class="rodape-impressao">Lista atualizada em {{ data_atual }} · Para atualizações, entre em contato com o departamento de TI</footer>
+</article>
+{% endif %}
 
 {% endblock %}
 
