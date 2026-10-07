@@ -440,17 +440,17 @@
             const j = await r.json();
             if (j.ok) {
                 alerta.className = 'alert alert-success';
-                alerta.textContent = '✅ ' + j.msg;
+                alerta.textContent = ' ' + j.msg;
                 alerta.style.display = 'block';
                 setTimeout(() => location.reload(), 800);
             } else {
                 alerta.className = 'alert alert-danger';
-                alerta.textContent = '❌ ' + j.msg;
+                alerta.textContent = ' ' + j.msg;
                 alerta.style.display = 'block';
             }
         } catch (e) {
             alerta.className = 'alert alert-danger';
-            alerta.textContent = '❌ Erro de conexão.';
+            alerta.textContent = ' Erro de conexão.';
             alerta.style.display = 'block';
         } finally {
             btn.disabled = false;

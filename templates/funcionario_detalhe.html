@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}{{ func.nome }} - Record{% endblock %}
+{% block page_title %}Funcionário{% endblock %}
+
+{% block styles %}
+<style>
+    .voltar {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        color: #64748b; text-decoration: none;
+        font-size: 0.9rem; margin-bottom: 1rem;
+    }
+    .voltar:hover { color: #1a2a4a; }
+
+    .card-func {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        padding: 1.5rem 1.75rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+    }
+    .avatar-grande {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: linear-gradient(135deg, #1a2a4a, #4a5d8a);
+        color: white; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 1.4rem; flex-shrink: 0;
+    }
+    .info h4 { margin: 0 0 0.25rem; color: #1a2a4a; font-weight: 700; }
+    .info .meta { color: #64748b; font-size: 0.88rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .info .meta span { display: inline-flex; align-items: center; gap: 0.35rem; }
+
+    .badge-cont {
+        background: #eff6ff; color: #1d4ed8;
+        padding: 0.4rem 0.9rem; border-radius: 8px;
+        font-weight: 700; font-size: 0.9rem; margin-left: auto;
+    }
+
+    .tabela-card {
+        background: #fff; border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;
+    }
+    .tabela-card table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .tabela-card thead th {
+        background: #f8fafc; color: #475569; font-weight: 600;
+        font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.3px;
+        padding: 12px 18px; text-align: left; border-bottom: 1px solid #e2e8f0;
+    }
+    .tabela-card tbody td {
+        padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #334155;
+    }
+    .tabela-card tbody tr:last-child td { border-bottom: none; }
+    .tabela-card tbody tr:hover { background: #fafbfc; }
+
+    .pill {
+        display: inline-block; background: #eff6ff; color: #1d4ed8;
+        padding: 2px 10px; border-radius: 6px;
+        font-weight: 600; font-size: 0.82rem;
+    }
+
+    .vazio { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
+    .vazio i { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; opacity: 0.4; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<a href="/funcionarios" class="voltar">
+    <i class="fas fa-arrow-left"></i> Voltar para Funcionários
+</a>
+
+<div class="card-func">
+    <div class="avatar-grande">
+        {{ func.nome[0]|upper }}{{ func.nome.split()[-1][0]|upper if func.nome.split()|length > 1 else '' }}
+    </div>
+    <div class="info">
+        <h4>{{ func.nome }}</h4>
+        <div class="meta">
+            {% if func.cargo %}<span><i class="fas fa-briefcase"></i> {{ func.cargo }}</span>{% endif %}
+            {% if func.setor %}<span><i class="fas fa-building"></i> {{ func.setor }}</span>{% endif %}
+        </div>
+    </div>
+    <div class="badge-cont">{{ total }} bem(ns)</div>
+</div>
+
+<div class="tabela-card">
+    {% if bens %}
+    <table>
+        <thead>
+            <tr>
+                <th>Categoria</th>
+                <th>Modelo</th>
+                <th>Patrimônio</th>
+                <th>Hostname</th>
+                <th>Marca</th>
+                <th>Serial</th>
+                <th>Departamento</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in bens %}
+            <tr>
+                <td><span class="pill">{{ b.categoria or '—' }}</span></td>
+                <td>{{ b.modelo or '—' }}</td>
+                <td>{{ b.patrimonio or '—' }}</td>
+                <td>{{ b.hostname or '—' }}</td>
+                <td>{{ b.marca or '—' }}</td>
+                <td>{{ b.serial or '—' }}</td>
+                <td>{{ b.departamento or '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="vazio">
+        <i class="fas fa-box-open"></i>
+        Nenhum bem vinculado a este funcionário.
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

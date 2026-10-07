@@ -213,10 +213,10 @@ async function registrar() {
     });
     const j = await r.json();
     if (j.ok) {
-        alert('✅ ' + j.msg);
+        alert(' ' + j.msg);
         window.location.href = '/movimentacoes';
     } else {
-        alert('❌ ' + j.msg);
+        alert(' ' + j.msg);
     }
 }
 </script>
