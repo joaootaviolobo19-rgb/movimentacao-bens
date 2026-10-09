@@ -3451,8 +3451,7 @@
     "_auditoria": "#REF!",
     "_verificacao": "2026-09-01 00:00:00",
     "_depto_extra": "",
-    "id": 157,
-    "atualizado_em": "2026-10-06T20:37:01.141058"
+    "id": 157
   },
   {
     "categoria": "Micro",
@@ -8211,8 +8210,8 @@
     "modelo": "22B3HMF",
     "hostname": "071",
     "patrimonio": "709",
-    "departamento": "MEET",
-    "responsavel": "MEET",
+    "departamento": "T.I",
+    "responsavel": "Deposito do RH",
     "marca": "Dell",
     "serial": "",
     "ramal": "",

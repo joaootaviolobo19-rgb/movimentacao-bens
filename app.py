@@ -77,6 +77,7 @@ Talisman(
             "'self'",
             "https://fonts.gstatic.com",
             "https://cdnjs.cloudflare.com",
+            "https://cdn.jsdelivr.net",
         ],
         "img-src": ["'self'", "data:"],
         "connect-src": ["'self'", "https://cdn.jsdelivr.net"],
@@ -1716,10 +1717,36 @@ def api_funcionarios_orfaos():
         "total": sum(len(v) for v in orfaos.values()),
     })
 
-
 @app.route("/organograma")
 def organograma_view():
     return render_template("organograma.html")
+
+@app.route("/api/organograma/dados")
+def api_organograma_dados():
+    """Proxy autenticado para o Supabase — não expõe a chave ao browser."""
+    import urllib.request
+    import urllib.error
+
+    url_base = os.environ.get("SUPABASE_URL", "").strip()
+    chave = os.environ.get("SUPABASE_KEY", "").strip()
+    if not url_base or not chave:
+        return jsonify({"ok": False, "msg": "Supabase não configurado no servidor."}), 503
+
+    url = url_base.rstrip("/") + "/rest/v1/colaboradores?select=*"
+    req = urllib.request.Request(url, headers={
+        "apikey": chave,
+        "Authorization": f"Bearer {chave}",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            dados = json.loads(resp.read().decode("utf-8"))
+        return jsonify({"ok": True, "colaboradores": dados})
+    except urllib.error.HTTPError as e:
+        app.logger.exception("Supabase HTTP erro %s", e.code)
+        return jsonify({"ok": False, "msg": f"Supabase respondeu {e.code}."}), 502
+    except Exception:
+        app.logger.exception("Falha ao consultar organograma.")
+        return jsonify({"ok": False, "msg": "Falha ao consultar organograma."}), 502
 
 
 @app.route("/movimentar")
@@ -2438,8 +2465,8 @@ def api_ramais_agrupados():
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute;20 per hour", methods=["POST"],
                key_func=lambda: (
-                   "login:" + (request.form.get("usuario")
-                               or "").strip().lower()
+    "login:" + (request.form.get("usuario")
+                or "").strip().lower()
                    if request.form.get("usuario")
                    else request.remote_addr or "anon"
 ))
