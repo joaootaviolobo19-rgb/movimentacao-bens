@@ -24,6 +24,7 @@ PERMISSOES = (
     ("configuracoes", "Configurações"),
     ("usuarios", "Usuários e perfis"),
     ("recepcao", "Central da Recepção"),
+    ("reunioes", "Reuniões"),
 )
 ACOES_POR_RECURSO = {
     "dashboard": {"ver"},
@@ -40,6 +41,7 @@ ACOES_POR_RECURSO = {
     "configuracoes": {"ver", "editar"},
     "usuarios": {"ver", "editar"},
     "recepcao": {"ver"},
+    "reunioes": {"ver"},
 }
 
 PERFIS_PADRAO = [
@@ -50,6 +52,7 @@ PERFIS_PADRAO = [
         "permissoes": [
             "recepcao.ver",
             "ramais.ver",
+            "reunioes.ver",
         ],
         "sistema": True,
     },

@@ -1,0 +1,820 @@
+{% extends "base.html" %}
+
+{% block title %}Solicitação de Sala - Record{% endblock %}
+{% block page_title %}Solicitação de Reserva de Sala{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .flatpickr-calendar {
+        font-family: 'Poppins', sans-serif;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        border: 1px solid #e3e6f0;
+    }
+    .flatpickr-day.selected { background: #1a2a4a; border-color: #1a2a4a; }
+    .flatpickr-day.today { border-color: #1a2a4a; }
+    .flatpickr-day.today:hover { background: #e3e6f0; border-color: #1a2a4a; color: #1a2a4a; }
+    .flatpickr-months .flatpickr-month { background: #1a2a4a; color: white; border-radius: 8px 8px 0 0; }
+    .flatpickr-current-month .flatpickr-monthDropdown-months { background: #1a2a4a; color: white; }
+    .flatpickr-current-month .numInputWrapper span.arrowUp:after { border-bottom-color: white; }
+    .flatpickr-current-month .numInputWrapper span.arrowDown:after { border-top-color: white; }
+    .flatpickr-weekdays { background: #1a2a4a; }
+    .flatpickr-weekday { color: rgba(255,255,255,0.8); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="row g-3">
+    <!-- FORMULÁRIO -->
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calendar-plus me-2"></i>Nova Solicitação
+            </div>
+            <div class="card-body">
+                <div id="alertaForm" class="alert d-none"></div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Reservar qual sala? *</label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="sala" id="sala_vip" value="Sala VIP">
+                            <label class="form-check-label" for="sala_vip">Sala VIP</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="sala" id="sala_reuniao" value="Sala de Reunião">
+                            <label class="form-check-label" for="sala_reuniao">Sala de Reunião</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Data *</label>
+                        <input type="text" class="form-control" id="f_data" placeholder="dd/mm/aaaa">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Hora início *</label>
+                        <input type="text" class="form-control" id="f_hora_inicio" placeholder="hh:mm">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Hora fim</label>
+                        <input type="text" class="form-control" id="f_hora_fim" placeholder="hh:mm (opcional)">
+                    </div>
+                </div>
+                <p class="text-muted small mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Horários aproximados para ciência de todos. Se não souber a hora final, deixe em branco.
+                </p>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Precisa de limpeza? *</label>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="limpeza" id="limpeza_nenhuma" value="Não precisa">
+                            <label class="form-check-label" for="limpeza_nenhuma">Não precisa</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="limpeza" id="limpeza_leve" value="Leve">
+                            <label class="form-check-label" for="limpeza_leve">Leve</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="limpeza" id="limpeza_media" value="Média">
+                            <label class="form-check-label" for="limpeza_media">Média</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="limpeza" id="limpeza_pesada" value="Pesada">
+                            <label class="form-check-label" for="limpeza_pesada">Pesada</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Recursos</label>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="f_cafe">
+                        <label class="form-check-label" for="f_cafe">Café</label>
+                    </div>
+                    <div class="ms-4 mb-2 d-none" id="box_cafe_qtd">
+                        <label class="form-label small mb-1">Quantidade de pessoas:</label>
+                        <input type="number" class="form-control form-control-sm" id="f_cafe_qtd" min="1" value="1" style="max-width:120px;">
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="f_agua">
+                        <label class="form-check-label" for="f_agua">Água</label>
+                    </div>
+                    <div class="ms-4 mb-2 d-none" id="box_agua_qtd">
+                        <label class="form-label small mb-1">Quantidade de garrafas:</label>
+                        <input type="number" class="form-control form-control-sm" id="f_agua_qtd" min="1" value="1" style="max-width:120px;">
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="f_refri">
+                        <label class="form-check-label" for="f_refri">Refrigerante</label>
+                    </div>
+                    <div class="ms-4 mb-2 d-none" id="box_refri_qtd">
+                        <label class="form-label small mb-1">Quantidade:</label>
+                        <input type="number" class="form-control form-control-sm" id="f_refri_qtd" min="1" value="1" style="max-width:120px;">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Importância da marcação</label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="importancia" id="imp_normal" value="NORMAL" checked>
+                            <label class="form-check-label" for="imp_normal">Normal</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="importancia" id="imp_importante" value="IMPORTANTE">
+                            <label class="form-check-label text-danger fw-semibold" for="imp_importante">Importante</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Observação (opcional)</label>
+                    <textarea class="form-control" id="f_observacao" rows="3"
+                              placeholder="Alguma informação adicional que a Copa/Recepção precise saber..."
+                              maxlength="1000"></textarea>
+                </div>
+
+                <button class="btn btn-primary w-100" id="btnEnviarSolicitacao" onclick="enviarSolicitacao()">
+    <i class="fas fa-paper-plane me-2"></i>Enviar Solicitação
+</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTÓRICO COM ABAS -->
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header p-0" style="background:#fff; border-bottom:1px solid #e3e6f0;">
+                <ul class="nav nav-pills nav-fill" id="tabsReunioes" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-proximas-btn" data-bs-toggle="pill"
+                                data-bs-target="#tab-proximas" type="button" role="tab"
+                                style="border-radius:0; padding:14px; font-weight:600; font-size:0.9rem;">
+                            <i class="fas fa-clock me-1"></i>
+                            Próximas
+                            <span class="badge bg-primary ms-1">{{ total_proximas }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-historico-btn" data-bs-toggle="pill"
+                                data-bs-target="#tab-historico" type="button" role="tab"
+                                style="border-radius:0; padding:14px; font-weight:600; font-size:0.9rem;">
+                            <i class="fas fa-history me-1"></i>
+                            Histórico
+                            <span class="badge bg-secondary ms-1">{{ total_historico }}</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body p-0">
+                <div class="tab-content" id="tabsReunioesContent">
+
+                    <!-- ABA PRÓXIMAS -->
+                    <div class="tab-pane fade show active" id="tab-proximas" role="tabpanel">
+                        {% if proximas %}
+                        <div style="max-height:600px; overflow-y:auto;">
+                            {% for s in proximas %}
+                            <div class="p-3 border-bottom">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <strong class="small">{{ s.sala }}</strong>
+                                    {% if s.importancia == 'IMPORTANTE' %}
+                                    <span class="badge bg-danger">Importante</span>
+                                    {% else %}
+                                    <span class="badge bg-primary">Normal</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="far fa-calendar me-1"></i>{{ s.data.split('-')|reverse|join('/') }} · {% if s.hora_fim == 'Não informado' %}a partir das {{ s.hora_inicio }}{% else %}{{ s.hora_inicio }} às {{ s.hora_fim }}{% endif %}
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="far fa-user me-1"></i>{{ s.solicitante }}
+                                </div>
+                                <div class="text-muted small mt-1">
+                                    {% if s.cafe %}<span class="badge bg-light text-dark">☕ {{ s.cafe_qtd }}</span>{% endif %}
+                                    {% if s.agua %}<span class="badge bg-light text-dark">💧 {{ s.agua_qtd }}</span>{% endif %}
+                                    {% if s.refrigerante %}<span class="badge bg-light text-dark">🥤 {{ s.refrigerante_qtd }}</span>{% endif %}
+                                    {% if s.limpeza != 'Não precisa' %}<span class="badge bg-light text-dark">🧹 {{ s.limpeza }}</span>{% endif %}
+                                </div>
+                                {% if s.pode_editar %}
+                                <div class="mt-2 d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-warning" onclick='abrirReagendar({{ s|tojson }})'>
+                                        <i class="fas fa-edit me-1"></i>Reagendar
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick='abrirCancelar({{ s|tojson }})'>
+                                        <i class="fas fa-times me-1"></i>Cancelar
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-calendar-check fs-1 d-block mb-2 opacity-50"></i>
+                            Nenhuma reunião agendada para frente.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- ABA HISTÓRICO -->
+                    <div class="tab-pane fade" id="tab-historico" role="tabpanel">
+                        {% if historico %}
+                        <div style="max-height:600px; overflow-y:auto;">
+                            {% for s in historico %}
+                            <div class="p-3 border-bottom" style="opacity:0.75;">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <strong class="small">{{ s.sala }}</strong>
+                                    <div class="d-flex gap-1">
+                                        {% if s.status == 'CANCELADA' %}
+                                        <span class="badge bg-secondary">Cancelada</span>
+                                        {% elif s.status == 'REAGENDADA' %}
+                                        <span class="badge bg-warning text-dark">Reagendada</span>
+                                        {% endif %}
+                                        {% if s.importancia == 'IMPORTANTE' %}
+                                        <span class="badge bg-danger">Importante</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="far fa-calendar me-1"></i>{{ s.data.split('-')|reverse|join('/') }} · {% if s.hora_fim == 'Não informado' %}a partir das {{ s.hora_inicio }}{% else %}{{ s.hora_inicio }} às {{ s.hora_fim }}{% endif %}
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="far fa-user me-1"></i>{{ s.solicitante }}
+                                </div>
+                                <div class="text-muted small mt-1">
+                                    {% if s.cafe %}<span class="badge bg-light text-dark">☕ {{ s.cafe_qtd }}</span>{% endif %}
+                                    {% if s.agua %}<span class="badge bg-light text-dark">💧 {{ s.agua_qtd }}</span>{% endif %}
+                                    {% if s.refrigerante %}<span class="badge bg-light text-dark">🥤 {{ s.refrigerante_qtd }}</span>{% endif %}
+                                    {% if s.limpeza != 'Não precisa' %}<span class="badge bg-light text-dark">🧹 {{ s.limpeza }}</span>{% endif %}
+                                </div>
+                                {% if s.status == 'CANCELADA' and s.motivo_cancelamento %}
+                                <div class="text-muted small mt-1 fst-italic">
+                                    <i class="fas fa-comment me-1"></i>{{ s.motivo_cancelamento }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-inbox fs-1 d-block mb-2 opacity-50"></i>
+                            Nenhuma solicitação passada.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CANCELAR -->
+<div class="modal fade" id="modalCancelar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-times-circle me-2"></i>Cancelar Reunião</h5>
+                <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Você tem certeza que deseja cancelar esta reunião?</p>
+                <div class="alert alert-light border">
+                    <strong id="cancelar_resumo"></strong>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Motivo do cancelamento (opcional)</label>
+                    <textarea class="form-control" id="cancelar_motivo" rows="3"
+                              placeholder="Ex: Reunião adiada, cliente cancelou..."></textarea>
+                </div>
+                <p class="text-muted small mb-0">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Um e-mail de aviso será enviado para Copa, Administrativo e Recepção.
+                </p>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <button class="btn btn-outline-warning" onclick="trocarParaReagendar()">
+                    <i class="fas fa-edit me-1"></i>Prefiro Reagendar
+                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Voltar</button>
+                       <button class="btn btn-danger" onclick="confirmarCancelamento()">
+                         <i class="fas fa-times me-1"></i>Confirmar Cancelamento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL REAGENDAR -->
+<div class="modal fade" id="modalReagendar" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Reagendar Reunião</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="alertaReagendar" class="alert d-none"></div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Sala *</label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="r_sala" id="r_sala_vip" value="Sala VIP">
+                            <label class="form-check-label" for="r_sala_vip">Sala VIP</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="r_sala" id="r_sala_reuniao" value="Sala de Reunião">
+                            <label class="form-check-label" for="r_sala_reuniao">Sala de Reunião</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Data *</label>
+                        <input type="text" class="form-control" id="r_data" placeholder="dd/mm/aaaa">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Hora início *</label>
+                        <input type="text" class="form-control" id="r_hora_inicio" placeholder="hh:mm">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Hora fim</label>
+                        <input type="text" class="form-control" id="r_hora_fim" placeholder="hh:mm (opcional)">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Limpeza *</label>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="r_limpeza" id="r_limpeza_nenhuma" value="Não precisa">
+                            <label class="form-check-label" for="r_limpeza_nenhuma">Não precisa</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="r_limpeza" id="r_limpeza_leve" value="Leve">
+                            <label class="form-check-label" for="r_limpeza_leve">Leve</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="r_limpeza" id="r_limpeza_media" value="Média">
+                            <label class="form-check-label" for="r_limpeza_media">Média</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="r_limpeza" id="r_limpeza_pesada" value="Pesada">
+                            <label class="form-check-label" for="r_limpeza_pesada">Pesada</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Recursos</label>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="r_cafe">
+                        <label class="form-check-label" for="r_cafe">Café</label>
+                    </div>
+                    <div class="ms-4 mb-2 d-none" id="r_box_cafe">
+                        <input type="number" class="form-control form-control-sm" id="r_cafe_qtd" min="1" value="1" style="max-width:120px;">
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="r_agua">
+                        <label class="form-check-label" for="r_agua">Água</label>
+                    </div>
+                    <div class="ms-4 mb-2 d-none" id="r_box_agua">
+                        <input type="number" class="form-control form-control-sm" id="r_agua_qtd" min="1" value="1" style="max-width:120px;">
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="r_refri">
+                        <label class="form-check-label" for="r_refri">Refrigerante</label>
+                    </div>
+                    <div class="ms-4 mb-2 d-none" id="r_box_refri">
+                        <input type="number" class="form-control form-control-sm" id="r_refri_qtd" min="1" value="1" style="max-width:120px;">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Importância</label>
+                    <div class="d-flex gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="r_importancia" id="r_imp_normal" value="NORMAL">
+                            <label class="form-check-label" for="r_imp_normal">Normal</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="r_importancia" id="r_imp_importante" value="IMPORTANTE">
+                            <label class="form-check-label text-danger fw-semibold" for="r_imp_importante">Importante</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Observação</label>
+                    <textarea class="form-control" id="r_observacao" rows="3" maxlength="1000"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                 <button class="btn btn-warning" id="btnConfirmarReagendamento" onclick="confirmarReagendamento()">
+    <i class="fas fa-check me-1"></i>Salvar Alterações
+</button>           
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+<script>
+    // ====== FLATPICKR ======
+    flatpickr.localize(flatpickr.l10ns.pt);
+
+        const configData = {
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "d/m/Y",
+        allowInput: false,
+        disableMobile: true,
+        minDate: "today"        // <--- ADICIONE ESSA LINHA
+    };
+    const configHora = {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i",
+        time_24hr: true,
+        altInput: true,
+        altFormat: "H:i",
+        allowInput: false,
+        disableMobile: true
+    };
+
+    flatpickr("#f_data", configData);
+    flatpickr("#f_hora_inicio", configHora);
+    flatpickr("#f_hora_fim", configHora);
+    flatpickr("#r_data", configData);
+    flatpickr("#r_hora_inicio", configHora);
+    flatpickr("#r_hora_fim", configHora);
+
+    // ====== CHECKBOXES ======
+    document.getElementById('f_cafe').addEventListener('change', function() {
+        document.getElementById('box_cafe_qtd').classList.toggle('d-none', !this.checked);
+    });
+    document.getElementById('f_agua').addEventListener('change', function() {
+        document.getElementById('box_agua_qtd').classList.toggle('d-none', !this.checked);
+    });
+    document.getElementById('f_refri').addEventListener('change', function() {
+        document.getElementById('box_refri_qtd').classList.toggle('d-none', !this.checked);
+    });
+    document.getElementById('r_cafe').addEventListener('change', function() {
+        document.getElementById('r_box_cafe').classList.toggle('d-none', !this.checked);
+    });
+    document.getElementById('r_agua').addEventListener('change', function() {
+        document.getElementById('r_box_agua').classList.toggle('d-none', !this.checked);
+    });
+    document.getElementById('r_refri').addEventListener('change', function() {
+        document.getElementById('r_box_refri').classList.toggle('d-none', !this.checked);
+    });
+
+        // ====== ENVIAR NOVA SOLICITAÇÃO ======
+        async function enviarSolicitacao() {
+        const alerta = document.getElementById('alertaForm');
+        const btn = document.getElementById('btnEnviarSolicitacao');
+        const sala = document.querySelector('input[name="sala"]:checked');
+        const limpeza = document.querySelector('input[name="limpeza"]:checked');
+        const importancia = document.querySelector('input[name="importancia"]:checked');
+
+        // Verifica campos obrigatórios
+        const faltando = [];
+        if (!sala) faltando.push('Sala');
+        if (!document.getElementById('f_data').value) faltando.push('Data');
+        if (!document.getElementById('f_hora_inicio').value) faltando.push('Hora início');
+        if (!limpeza) faltando.push('Se precisa de limpeza');
+
+        if (faltando.length > 0) {
+            alerta.className = 'alert alert-danger';
+            alerta.textContent = 'Preencha os campos obrigatórios: ' + faltando.join(', ') + '.';
+            alerta.classList.remove('d-none');
+            return;
+        }
+
+        // Validação de data no passado
+        const dataInput = document.getElementById('f_data').value;
+        if (dataInput) {
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            const dataSolicitada = new Date(dataInput + 'T00:00:00');
+            if (dataSolicitada < hoje) {
+                alerta.className = 'alert alert-danger';
+                alerta.textContent = 'Não é possível agendar uma reunião para uma data que já passou.';
+                alerta.classList.remove('d-none');
+                return;
+            }
+        }
+
+        const horaFim = document.getElementById('f_hora_fim').value;
+        const horaInicio = document.getElementById('f_hora_inicio').value;
+
+        if (horaFim && horaFim !== '') {
+            if (horaFim <= horaInicio) {
+                alerta.className = 'alert alert-danger';
+                alerta.textContent = 'O horário de término deve ser depois do horário de início.';
+                alerta.classList.remove('d-none');
+                return;
+            }
+        }
+
+        if (!horaFim) {
+            const prosseguir = confirm(
+                'Você não informou o horário de término.\n\n' +
+                'Deseja enviar a solicitação assim mesmo?\n' +
+                'No e-mail, o horário aparecerá como "A partir das HH:MM".'
+            );
+            if (!prosseguir) return;
+        }
+
+        const dados = {
+            sala: sala.value,
+            data: document.getElementById('f_data').value,
+            hora_inicio: horaInicio,
+            hora_fim: horaFim,
+            limpeza: limpeza.value,
+            cafe: document.getElementById('f_cafe').checked,
+            cafe_qtd: document.getElementById('f_cafe_qtd').value,
+            agua: document.getElementById('f_agua').checked,
+            agua_qtd: document.getElementById('f_agua_qtd').value,
+            refrigerante: document.getElementById('f_refri').checked,
+            refrigerante_qtd: document.getElementById('f_refri_qtd').value,
+            importancia: importancia ? importancia.value : 'NORMAL',
+            observacao: document.getElementById('f_observacao').value
+        };
+
+        // ===== ATIVA O ESTADO "ENVIANDO" NO BOTÃO =====
+        const textoOriginal = btn.innerHTML;
+        btn.disabled = true;
+        btn.classList.add('disabled');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando... aguarde';
+
+        alerta.className = 'alert alert-info';
+        alerta.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando solicitação e e-mail... por favor, aguarde.';
+        alerta.classList.remove('d-none');
+
+        try {
+            const r = await fetch('/reunioes/solicitar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(dados)
+            });
+            const j = await r.json();
+
+            if (j.ok) {
+                // Sucesso!
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-success');
+                btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Enviado com sucesso!';
+
+                alerta.className = 'alert alert-success';
+                alerta.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + j.msg;
+
+                if (j.aviso) {
+                    setTimeout(() => alert(j.aviso), 800);
+                }
+                setTimeout(() => location.reload(), 2200);
+            } else {
+                // Erro de validação
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+                btn.innerHTML = textoOriginal;
+
+                alerta.className = 'alert alert-danger';
+                alerta.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>' + j.msg;
+            }
+        } catch (e) {
+            // Erro de conexão
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+            btn.innerHTML = textoOriginal;
+
+            alerta.className = 'alert alert-danger';
+            alerta.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>Erro de conexão com o servidor.';
+        }
+    }
+
+    function abrirReagendar(s) {
+        idAlvo = s.id;
+
+        document.querySelector(`input[name="r_sala"][value="${s.sala}"]`).checked = true;
+        document.getElementById('r_data').value = s.data || '';
+        document.getElementById('r_hora_inicio').value = s.hora_inicio || '';
+        // Se hora_fim for "Não informado", deixa vazio
+        const horaFim = (s.hora_fim && s.hora_fim !== 'Não informado') ? s.hora_fim : '';
+        document.getElementById('r_hora_fim').value = horaFim;
+        if (s.limpeza) {
+            const radioLimpeza = document.querySelector(`input[name="r_limpeza"][value="${s.limpeza}"]`);
+            if (radioLimpeza) radioLimpeza.checked = true;
+        }
+
+        document.getElementById('r_cafe').checked = !!s.cafe;
+        document.getElementById('r_cafe_qtd').value = s.cafe_qtd || 1;
+        document.getElementById('r_box_cafe').classList.toggle('d-none', !s.cafe);
+
+        document.getElementById('r_agua').checked = !!s.agua;
+        document.getElementById('r_agua_qtd').value = s.agua_qtd || 1;
+        document.getElementById('r_box_agua').classList.toggle('d-none', !s.agua);
+
+        document.getElementById('r_refri').checked = !!s.refrigerante;
+        document.getElementById('r_refri_qtd').value = s.refrigerante_qtd || 1;
+        document.getElementById('r_box_refri').classList.toggle('d-none', !s.refrigerante);
+
+        document.querySelector(`input[name="r_importancia"][value="${s.importancia}"]`).checked = true;
+        document.getElementById('r_observacao').value = s.observacao || '';
+        document.getElementById('alertaReagendar').classList.add('d-none');
+
+        if (!modalReagendar) {
+            modalReagendar = new bootstrap.Modal(document.getElementById('modalReagendar'));
+        }
+        modalReagendar.show();
+    }
+
+    function trocarParaReagendar() {
+        if (modalCancelar) modalCancelar.hide();
+        const todas = {{ (proximas + historico)|tojson }};
+        const alvo = todas.find(x => x.id === idAlvo);
+        if (alvo) abrirReagendar(alvo);
+    }
+
+        async function confirmarCancelamento() {
+        if (!idAlvo) return;
+        const motivo = document.getElementById('cancelar_motivo').value;
+        const btn = document.getElementById('btnConfirmarCancelamento');
+
+        const textoOriginal = btn.innerHTML;
+        btn.disabled = true;
+        btn.classList.add('disabled');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Cancelando...';
+
+        try {
+            const r = await fetch('/reunioes/cancelar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: idAlvo, motivo: motivo})
+            });
+            const j = await r.json();
+            if (j.ok) {
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-secondary');
+                btn.innerHTML = '<i class="fas fa-check me-2"></i>Cancelado!';
+                if (j.aviso) {
+                    setTimeout(() => alert(j.aviso), 500);
+                }
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+                btn.innerHTML = textoOriginal;
+                alert(j.msg);
+            }
+        } catch (e) {
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+            btn.innerHTML = textoOriginal;
+            alert('Erro de conexão com o servidor.');
+        }
+    }
+            async function confirmarReagendamento() {
+        if (!idAlvo) return;
+        const alerta = document.getElementById('alertaReagendar');
+        const btn = document.getElementById('btnConfirmarReagendamento');
+
+        const sala = document.querySelector('input[name="r_sala"]:checked');
+        const limpeza = document.querySelector('input[name="r_limpeza"]:checked');
+        const importancia = document.querySelector('input[name="r_importancia"]:checked');
+
+        const faltando = [];
+        if (!sala) faltando.push('Sala');
+        if (!document.getElementById('r_data').value) faltando.push('Data');
+        if (!document.getElementById('r_hora_inicio').value) faltando.push('Hora início');
+        if (!limpeza) faltando.push('Se precisa de limpeza');
+
+        if (faltando.length > 0) {
+            alerta.className = 'alert alert-danger';
+            alerta.textContent = 'Preencha os campos obrigatórios: ' + faltando.join(', ') + '.';
+            alerta.classList.remove('d-none');
+            return;
+        }
+
+        // Validação de data no passado
+        const dataInput = document.getElementById('r_data').value;
+        if (dataInput) {
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            const dataSolicitada = new Date(dataInput + 'T00:00:00');
+            if (dataSolicitada < hoje) {
+                alerta.className = 'alert alert-danger';
+                alerta.textContent = 'Não é possível agendar uma reunião para uma data que já passou.';
+                alerta.classList.remove('d-none');
+                return;
+            }
+        }
+
+        // Validação de horário
+        const rHoraIni = document.getElementById('r_hora_inicio').value;
+        const rHoraFim = document.getElementById('r_hora_fim').value;
+        if (rHoraFim && rHoraFim !== '') {
+            if (rHoraFim <= rHoraIni) {
+                alerta.className = 'alert alert-danger';
+                alerta.textContent = 'O horário de término deve ser depois do horário de início.';
+                alerta.classList.remove('d-none');
+                return;
+            }
+        }
+
+        const horaFim = document.getElementById('r_hora_fim').value;
+        if (!horaFim) {
+            const prosseguir = confirm(
+                'Você não informou o horário de término.\n\n' +
+                'Deseja salvar assim mesmo?'
+            );
+            if (!prosseguir) return;
+        }
+
+        const dados = {
+            id: idAlvo,
+            sala: sala.value,
+            data: document.getElementById('r_data').value,
+            hora_inicio: document.getElementById('r_hora_inicio').value,
+            hora_fim: horaFim,
+            limpeza: limpeza.value,
+            cafe: document.getElementById('r_cafe').checked,
+            cafe_qtd: document.getElementById('r_cafe_qtd').value,
+            agua: document.getElementById('r_agua').checked,
+            agua_qtd: document.getElementById('r_agua_qtd').value,
+            refrigerante: document.getElementById('r_refri').checked,
+            refrigerante_qtd: document.getElementById('r_refri_qtd').value,
+            importancia: importancia ? importancia.value : 'NORMAL',
+            observacao: document.getElementById('r_observacao').value
+        };
+
+        // Ativa estado "enviando" no botão
+        const textoOriginal = btn.innerHTML;
+        btn.disabled = true;
+        btn.classList.add('disabled');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvando...';
+
+        alerta.className = 'alert alert-info';
+        alerta.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enviando alterações e e-mail... por favor, aguarde.';
+        alerta.classList.remove('d-none');
+
+        try {
+            const r = await fetch('/reunioes/reagendar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(dados)
+            });
+            const j = await r.json();
+
+            if (j.ok) {
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-success');
+                btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Alterado!';
+
+                alerta.className = 'alert alert-success';
+                alerta.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + j.msg;
+
+                if (j.aviso) {
+                    setTimeout(() => alert(j.aviso), 800);
+                }
+                setTimeout(() => location.reload(), 2200);
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+                btn.innerHTML = textoOriginal;
+
+                alerta.className = 'alert alert-danger';
+                alerta.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>' + j.msg;
+            }
+        } catch (e) {
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+            btn.innerHTML = textoOriginal;
+
+            alerta.className = 'alert alert-danger';
+            alerta.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>Erro de conexão com o servidor.';
+        }
+    }
+</script>
+{% endblock %}

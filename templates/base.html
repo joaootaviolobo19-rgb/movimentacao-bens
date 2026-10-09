@@ -121,21 +121,28 @@
                 <img src="{{ url_for('static', filename='lateral.png') }}" alt="Record Logo">
             </div>
             <ul class="sidebar-menu">
-                {% if tem_permissao('dashboard.ver') %}<li><a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-chart-bar"></i> <span>Dashboard</span></a></li>{% endif %}
-                {% if tem_permissao('recepcao.ver') %}<li><a href="/recepcao" class="{% if request.path.startswith('/recepcao') %}active{% endif %}"><i class="fas fa-address-book"></i> <span>Central de Atendimento</span></a></li>{% endif %}
-                {% if tem_permissao('bens.ver') %}<li><a href="/bens" class="{% if request.path.startswith('/bens') %}active{% endif %}"><i class="fas fa-laptop"></i> <span>Bens</span></a></li>{% endif %}
-                {% if tem_permissao('planilha.ver') %}<li><a href="/planilha" class="{% if request.path.startswith('/planilha') %}active{% endif %}"><i class="fas fa-table"></i> <span>Planilha</span></a></li>{% endif %}
-                {% if tem_permissao('funcionarios.ver') %}<li><a href="/funcionarios" class="{% if request.path.startswith('/funcionarios') %}active{% endif %}"><i class="fas fa-users"></i> <span>Funcionários</span></a></li>{% endif %}
-                {% if tem_permissao('organograma.ver') %}<li><a href="/organograma" class="{% if request.path.startswith('/organograma') %}active{% endif %}"><i class="fas fa-sitemap"></i> <span>Organograma</span></a></li>{% endif %}
-                {% if tem_permissao('ferias.ver') %}<li><a href="/ferias" class="{% if request.path.startswith('/ferias') %}active{% endif %}"><i class="fas fa-umbrella-beach"></i> <span>Férias</span></a></li>{% endif %}
-                {% if tem_permissao('ramais.ver') %}<li><a href="/ramais" class="{% if request.path.startswith('/ramais') %}active{% endif %}"><i class="fas fa-phone"></i> <span>Ramais</span></a></li>{% endif %}
-                {% if tem_permissao('projetos.ver') %}<li><a href="/projetos" class="{% if request.path.startswith('/projetos') %}active{% endif %}"><i class="fas fa-tasks"></i> <span>Projetos</span></a></li>{% endif %}
-                {% if tem_permissao('ponto.ver') %}<li><a href="/ponto" class="{% if request.path.startswith('/ponto') %}active{% endif %}"><i class="fas fa-clock"></i> <span>Controle de Ponto</span></a></li>{% endif %}
-                {% if tem_permissao('movimentacoes.editar') %}<li><a href="/movimentar" class="{% if request.path.startswith('/movimentar') %}active{% endif %}"><i class="fas fa-exchange-alt"></i> <span>Movimentar</span></a></li>{% endif %}
-                {% if tem_permissao('movimentacoes.ver') %}<li><a href="/movimentacoes" class="{% if request.path.startswith('/movimentacoes') %}active{% endif %}"><i class="fas fa-history"></i> <span>Histórico</span></a></li>{% endif %}
-                {% if tem_permissao('usuarios.ver') %}<li><a href="/usuarios" class="{% if request.path.startswith('/usuarios') %}active{% endif %}"><i class="fas fa-user-shield"></i> <span>Usuários e perfis</span></a></li>{% endif %}
-                {% if tem_permissao('configuracoes.ver') %}<li><a href="/configuracoes" class="{% if request.path.startswith('/configuracoes') %}active{% endif %}"><i class="fas fa-cog"></i> <span>Configurações</span></a></li>{% endif %}
-            </ul>
+    {% if tem_permissao('reunioes.ver') %}
+    <li>
+        <a href="/reunioes" class="{% if request.path.startswith('/reunioes') %}active{% endif %}">
+            <i class="fas fa-calendar-alt"></i> <span>Reuniões</span>
+        </a>
+    </li>
+    {% endif %}
+    {% if tem_permissao('dashboard.ver') %}<li><a href="/" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-chart-bar"></i> <span>Dashboard</span></a></li>{% endif %}
+    {% if tem_permissao('recepcao.ver') %}<li><a href="/recepcao" class="{% if request.path.startswith('/recepcao') %}active{% endif %}"><i class="fas fa-address-book"></i> <span>Central de Atendimento</span></a></li>{% endif %}
+    {% if tem_permissao('bens.ver') %}<li><a href="/bens" class="{% if request.path.startswith('/bens') %}active{% endif %}"><i class="fas fa-laptop"></i> <span>Bens</span></a></li>{% endif %}
+    {% if tem_permissao('planilha.ver') %}<li><a href="/planilha" class="{% if request.path.startswith('/planilha') %}active{% endif %}"><i class="fas fa-table"></i> <span>Planilha</span></a></li>{% endif %}
+    {% if tem_permissao('funcionarios.ver') %}<li><a href="/funcionarios" class="{% if request.path.startswith('/funcionarios') %}active{% endif %}"><i class="fas fa-users"></i> <span>Funcionários</span></a></li>{% endif %}
+    {% if tem_permissao('organograma.ver') %}<li><a href="/organograma" class="{% if request.path.startswith('/organograma') %}active{% endif %}"><i class="fas fa-sitemap"></i> <span>Organograma</span></a></li>{% endif %}
+    {% if tem_permissao('ferias.ver') %}<li><a href="/ferias" class="{% if request.path.startswith('/ferias') %}active{% endif %}"><i class="fas fa-umbrella-beach"></i> <span>Férias</span></a></li>{% endif %}
+    {% if tem_permissao('ramais.ver') %}<li><a href="/ramais" class="{% if request.path.startswith('/ramais') %}active{% endif %}"><i class="fas fa-phone"></i> <span>Ramais</span></a></li>{% endif %}
+    {% if tem_permissao('projetos.ver') %}<li><a href="/projetos" class="{% if request.path.startswith('/projetos') %}active{% endif %}"><i class="fas fa-tasks"></i> <span>Projetos</span></a></li>{% endif %}
+    {% if tem_permissao('ponto.ver') %}<li><a href="/ponto" class="{% if request.path.startswith('/ponto') %}active{% endif %}"><i class="fas fa-clock"></i> <span>Controle de Ponto</span></a></li>{% endif %}
+    {% if tem_permissao('movimentacoes.editar') %}<li><a href="/movimentar" class="{% if request.path.startswith('/movimentar') %}active{% endif %}"><i class="fas fa-exchange-alt"></i> <span>Movimentar</span></a></li>{% endif %}
+    {% if tem_permissao('movimentacoes.ver') %}<li><a href="/movimentacoes" class="{% if request.path.startswith('/movimentacoes') %}active{% endif %}"><i class="fas fa-history"></i> <span>Histórico</span></a></li>{% endif %}
+    {% if tem_permissao('usuarios.ver') %}<li><a href="/usuarios" class="{% if request.path.startswith('/usuarios') %}active{% endif %}"><i class="fas fa-user-shield"></i> <span>Usuários e perfis</span></a></li>{% endif %}
+    {% if tem_permissao('configuracoes.ver') %}<li><a href="/configuracoes" class="{% if request.path.startswith('/configuracoes') %}active{% endif %}"><i class="fas fa-cog"></i> <span>Configurações</span></a></li>{% endif %}
+</ul>
         </nav>
 
         <main class="main-content" id="mainContent">

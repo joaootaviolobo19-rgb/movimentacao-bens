@@ -345,6 +345,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script type="application/json" id="ferias-data">{{ todas|tojson|safe }}</script>
 <script>
     // ===== ABAS =====
     document.querySelectorAll('.aba').forEach(btn => {
@@ -359,7 +360,7 @@
 
     {% if tem_permissao('ferias.editar') %}
     // ===== DADOS =====
-    const FERIAS = {{ todas|tojson }};
+    const FERIAS = JSON.parse(document.getElementById('ferias-data').textContent);
     let modalFerias;
 
     function abrirModal() {

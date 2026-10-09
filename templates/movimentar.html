@@ -121,10 +121,13 @@
 {% endblock %}
 
 {% block scripts %}
+<script type="application/json" id="bens-por-resp">{{ por_resp|tojson|safe }}</script>
+<script type="application/json" id="todos-bens">{{ bens|tojson|safe }}</script>
+<script type="application/json" id="versoes-bens">{{ versoes|tojson|safe }}</script>
 <script>
-const BENS_POR_RESP = {{ por_resp|tojson }};
-const TODOS_BENS = {{ bens|tojson }};
-const VERSOES_BENS = {{ versoes|tojson }};
+const BENS_POR_RESP = JSON.parse(document.getElementById('bens-por-resp').textContent);
+const TODOS_BENS = JSON.parse(document.getElementById('todos-bens').textContent);
+const VERSOES_BENS = JSON.parse(document.getElementById('versoes-bens').textContent);
 
 let selecionados = new Set();
 

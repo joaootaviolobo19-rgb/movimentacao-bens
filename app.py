@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import email_sender
+from database import db, init_db
+from reunioes import reunioes_bp   # <--- Tem que ter isso
 import permissoes
 import usuarios as mod_usuarios
 import unicodedata
@@ -27,6 +29,8 @@ DADOS = os.path.join(BASE_DIR, "dados")
 os.makedirs(DADOS, exist_ok=True)
 
 app = Flask(__name__)
+init_db(app)
+app.register_blueprint(reunioes_bp)
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
@@ -62,6 +66,8 @@ app.secret_key = _carregar_chave_sessao()
 
 RECURSO_POR_ENDPOINT = {
     "dashboard": "dashboard",
+    "reunioes.reunioes_view": "reunioes",      # <--- ADICIONE
+    "reunioes.solicitar": "reunioes",          # <--- ADICIONE
     "bens_view": "bens", "bens_salvar": "bens", "bens_transferir": "movimentacoes",
     "bens_excluir": "bens", "bens_exportar": "bens",
     "planilha_view": "planilha", "api_bens_celula": "planilha",
@@ -108,6 +114,7 @@ def perfil_home():
     destinos = (
         ("dashboard.ver", "dashboard"),
         ("recepcao.ver", "recepcao_view"),
+        ("reunioes.ver", "reunioes.reunioes_view"),   # <--- ADICIONE
         ("bens.ver", "bens_view"),
         ("planilha.ver", "planilha_view"),
         ("funcionarios.ver", "funcionarios_view"),
