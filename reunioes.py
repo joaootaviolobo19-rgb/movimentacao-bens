@@ -5,14 +5,44 @@ import tempfile
 from datetime import datetime
 from html import escape
 from flask import Blueprint, render_template, request, jsonify, session
+
+try:
+    from filelock import FileLock, Timeout as FileLockTimeout
+    _HAS_FILELOCK = True
+except ImportError:
+    _HAS_FILELOCK = False
+
+    class FileLock:
+        def __init__(self, *a, **kw): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+
+    class FileLockTimeout(Exception):
+        pass
+
 import email_sender
+import permissoes
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DADOS = os.path.join(BASE_DIR, "dados")
 ARQ_SOLICITACOES = os.path.join(DADOS, "solicitacoes_reuniao.json")
 ARQ_CONFIG_REUNIOES = os.path.join(DADOS, "config_reunioes.json")
+LOCK_PATH = os.path.join(DADOS, ".reunioes.lock")
 
 reunioes_bp = Blueprint('reunioes', __name__)
+_lock = FileLock(LOCK_PATH, timeout=10) if _HAS_FILELOCK else FileLock()
+
+SALAS_PERMITIDAS = {"Sala VIP", "Sala de Reunião"}
+
+
+def _pode_editar(sol):
+    """Dono da reserva ou admin TI."""
+    if permissoes.tem_permissao(session.get("tipo", ""), "*"):
+        return True
+    return (
+        sol.get("usuario", "") != ""
+        and sol.get("usuario") == session.get("usuario", "")
+    )
 
 
 def _carregar_config():
@@ -47,16 +77,32 @@ def _salvar_solicitacoes(lista):
         raise
 
 
-# ============================================================
-# VALIDAÇÃO DE DATA E HORA
-# ============================================================
+def _horario_fim(sol):
+    fim = (sol.get("hora_fim") or "").strip()
+    if not fim or fim == "Não informado":
+        return "23:59"
+    return fim
+
+
+def _ha_conflito(lista, sala, data, hora_inicio, hora_fim):
+    """Retorna a reserva conflitante ou None."""
+    fim_norm = hora_fim if hora_fim and hora_fim != "Não informado" else "23:59"
+    for s in lista:
+        if s.get("status") == "CANCELADA":
+            continue
+        if s.get("sala") != sala or s.get("data") != data:
+            continue
+        s_ini = s.get("hora_inicio", "")
+        s_fim = _horario_fim(s)
+        if fim_norm <= s_ini:
+            continue
+        if hora_inicio >= s_fim:
+            continue
+        return s
+    return None
+
 
 def _validar_data_hora(data_str, hora_inicio, hora_fim):
-    """
-    Valida se a data/hora fazem sentido.
-    Retorna (ok, mensagem_erro).
-    """
-    # 1. Data não pode estar no passado
     try:
         data_solicitada = datetime.strptime(data_str, "%Y-%m-%d").date()
     except (ValueError, TypeError):
@@ -66,7 +112,6 @@ def _validar_data_hora(data_str, hora_inicio, hora_fim):
     if data_solicitada < hoje:
         return False, "Não é possível agendar uma reunião para uma data que já passou."
 
-    # 2. Se a data for hoje, a hora de início não pode ser no passado
     if data_solicitada == hoje:
         try:
             hora_ini = datetime.strptime(hora_inicio, "%H:%M").time()
@@ -74,13 +119,10 @@ def _validar_data_hora(data_str, hora_inicio, hora_fim):
             return False, "Hora de início inválida."
 
         agora = datetime.now()
-        # Compara a hora solicitada com a hora atual
         hora_agora = agora.time()
-        # Só bloqueia se a hora de início já passou (com margem de 1 minuto)
         if (hora_ini.hour, hora_ini.minute) < (hora_agora.hour, hora_agora.minute):
             return False, "Para o dia de hoje, o horário de início já passou. Escolha um horário futuro."
 
-    # 3. Se hora fim foi informada, ela precisa ser MAIOR que hora início
     if hora_fim and hora_fim != 'Não informado':
         try:
             h_ini = datetime.strptime(hora_inicio, "%H:%M")
@@ -113,7 +155,8 @@ def _lista_recursos_html(sol):
     if sol.get("agua"):
         recursos.append(f"Água ({sol.get('agua_qtd')} garrafa(s))")
     if sol.get("refrigerante"):
-        recursos.append(f"Refrigerante ({sol.get('refrigerante_qtd')} unidade(s))")
+        recursos.append(
+            f"Refrigerante ({sol.get('refrigerante_qtd')} unidade(s))")
     if recursos:
         return "".join(
             f'<li style="padding:4px 0; font-size:14px;">{escape(r)}</li>'
@@ -153,11 +196,11 @@ def _tabela_dados_html(sol):
     <table style="width:100%; border-collapse:collapse; margin-top:15px;">
         <tr>
             <td style="padding:10px; background:#f8fafc; font-weight:600; width:35%; font-size:14px;">Solicitante</td>
-            <td style="padding:10px; font-size:14px;">{escape(sol.get('solicitante',''))}</td>
+            <td style="padding:10px; font-size:14px;">{escape(sol.get('solicitante', ''))}</td>
         </tr>
         <tr>
             <td style="padding:10px; background:#f8fafc; font-weight:600; font-size:14px;">Sala</td>
-            <td style="padding:10px; font-size:14px;"><strong>{escape(sol.get('sala',''))}</strong></td>
+            <td style="padding:10px; font-size:14px;"><strong>{escape(sol.get('sala', ''))}</strong></td>
         </tr>
         <tr>
             <td style="padding:10px; background:#f8fafc; font-weight:600; font-size:14px;">Data</td>
@@ -176,7 +219,7 @@ def _tabela_dados_html(sol):
         </tr>
         <tr>
             <td style="padding:10px; background:#f8fafc; font-weight:600; font-size:14px;">Limpeza</td>
-            <td style="padding:10px; font-size:14px;">{escape(sol.get('limpeza','Não precisa'))}</td>
+            <td style="padding:10px; font-size:14px;">{escape(sol.get('limpeza', 'Não precisa'))}</td>
         </tr>
     </table>
     """
@@ -213,7 +256,7 @@ def _montar_email_cancelamento(sol):
         <div style="background:#dc2626; color:white; padding:20px; border-radius:8px 8px 0 0;">
             <h2 style="margin:0;">REUNIÃO CANCELADA</h2>
             <p style="margin:5px 0 0; opacity:0.9; font-size:13px;">
-                Cancelada em {datetime.now().strftime('%d/%m/%Y às %H:%M')} por {escape(sol.get('cancelada_por','—'))}
+                Cancelada em {datetime.now().strftime('%d/%m/%Y às %H:%M')} por {escape(sol.get('cancelada_por', '—'))}
             </p>
         </div>
         <div style="padding:20px; background:#fff; border:1px solid #e2e8f0; border-top:none; border-radius:0 0 8px 8px;">
@@ -250,7 +293,7 @@ def _montar_email_alteracao(sol, alteracoes):
         <div style="background:#d97706; color:white; padding:20px; border-radius:8px 8px 0 0;">
             <h2 style="margin:0;">REUNIÃO ALTERADA</h2>
             <p style="margin:5px 0 0; opacity:0.9; font-size:13px;">
-                Alterada em {datetime.now().strftime('%d/%m/%Y às %H:%M')} por {escape(sol.get('alterada_por','—'))}
+                Alterada em {datetime.now().strftime('%d/%m/%Y às %H:%M')} por {escape(sol.get('alterada_por', '—'))}
             </p>
         </div>
         <div style="padding:20px; background:#fff; border:1px solid #e2e8f0; border-top:none; border-radius:0 0 8px 8px;">
@@ -292,15 +335,13 @@ def reunioes_view():
     todas = _carregar_solicitacoes()
     agora = datetime.now()
 
-    import permissoes
     usuario_logado = session.get('usuario', '')
-    eh_admin = permissoes.tem_permissao(session.get('tipo', ''), '*')
 
     proximas = []
     historico = []
 
     for s in todas:
-        s['pode_editar'] = eh_admin or (s.get('usuario') == usuario_logado)
+        s['pode_editar'] = _pode_editar(s)
         status = s.get('status', 'ATIVA')
         if status == 'CANCELADA':
             historico.append(s)
@@ -322,7 +363,8 @@ def reunioes_view():
         except (ValueError, KeyError):
             historico.append(s)
 
-    proximas.sort(key=lambda x: f"{x.get('data', '')} {x.get('hora_inicio', '')}")
+    proximas.sort(
+        key=lambda x: f"{x.get('data', '')} {x.get('hora_inicio', '')}")
     historico = list(reversed(historico))[:50]
 
     return render_template(
@@ -342,6 +384,8 @@ def solicitar():
 
     if not dados.get('sala'):
         return jsonify({"ok": False, "msg": "Selecione uma sala."}), 400
+    if dados.get('sala') not in SALAS_PERMITIDAS:
+        return jsonify({"ok": False, "msg": "Sala inválida."}), 400
     if not dados.get('data'):
         return jsonify({"ok": False, "msg": "Informe a data."}), 400
     if not dados.get('hora_inicio'):
@@ -366,34 +410,52 @@ def solicitar():
     except (TypeError, ValueError):
         return jsonify({"ok": False, "msg": "Quantidades inválidas."}), 400
 
-    lista = _carregar_solicitacoes()
+    try:
+        with _lock:
+            lista = _carregar_solicitacoes()
 
-    solicitacao = {
-        "id": (max([s.get("id", 0) for s in lista]) + 1) if lista else 1,
-        "solicitante": session.get('nome', session.get('usuario', '')),
-        "usuario": session.get('usuario', ''),
-        "sala": dados.get('sala'),
-        "data": dados.get('data'),
-        "hora_inicio": dados.get('hora_inicio'),
-        "hora_fim": hora_fim,
-        "limpeza": dados.get('limpeza'),
-        "cafe": bool(dados.get('cafe')),
-        "cafe_qtd": cafe_qtd,
-        "agua": bool(dados.get('agua')),
-        "agua_qtd": agua_qtd,
-        "refrigerante": bool(dados.get('refrigerante')),
-        "refrigerante_qtd": refri_qtd,
-        "importancia": dados.get('importancia', 'NORMAL'),
-        "observacao": (dados.get('observacao') or '').strip()[:1000],
-        "criado_em": datetime.now().isoformat(timespec='seconds'),
-        "status": "ATIVA",
-    }
+            conflito = _ha_conflito(
+                lista, dados['sala'], dados['data'],
+                dados['hora_inicio'], hora_fim,
+            )
+            if conflito:
+                return jsonify({
+                    "ok": False,
+                    "msg": (
+                        f"Conflito de agenda: {conflito.get('sala')} já está reservada "
+                        f"das {conflito.get('hora_inicio')} às {_horario_fim(conflito)} "
+                        f"em {conflito.get('data')}."
+                    ),
+                }), 409
 
-    # 1. SALVA PRIMEIRO
-    lista.append(solicitacao)
-    _salvar_solicitacoes(lista)
+            solicitacao = {
+                "id": (max([s.get("id", 0) for s in lista]) + 1) if lista else 1,
+                "solicitante": session.get('nome', session.get('usuario', '')),
+                "usuario": session.get('usuario', ''),
+                "sala": dados.get('sala'),
+                "data": dados.get('data'),
+                "hora_inicio": dados.get('hora_inicio'),
+                "hora_fim": hora_fim,
+                "limpeza": dados.get('limpeza'),
+                "cafe": bool(dados.get('cafe')),
+                "cafe_qtd": cafe_qtd,
+                "agua": bool(dados.get('agua')),
+                "agua_qtd": agua_qtd,
+                "refrigerante": bool(dados.get('refrigerante')),
+                "refrigerante_qtd": refri_qtd,
+                "importancia": dados.get('importancia', 'NORMAL'),
+                "observacao": (dados.get('observacao') or '').strip()[:1000],
+                "criado_em": datetime.now().isoformat(timespec='seconds'),
+                "status": "ATIVA",
+            }
+            lista.append(solicitacao)
+            _salvar_solicitacoes(lista)
+    except FileLockTimeout:
+        return jsonify({
+            "ok": False,
+            "msg": "Sistema ocupado. Tente novamente em alguns segundos."
+        }), 503
 
-    # 2. Tenta enviar o e-mail
     cfg = _carregar_config()
     destinatarios = cfg.get('destinatarios', [])
 
@@ -429,24 +491,31 @@ def cancelar():
     if not dados or not dados.get('id'):
         return jsonify({"ok": False, "msg": "ID inválido."}), 400
 
-    lista = _carregar_solicitacoes()
-    alvo = next((s for s in lista if s.get('id') == dados['id']), None)
-    if not alvo:
-        return jsonify({"ok": False, "msg": "Solicitação não encontrada."}), 404
+    try:
+        with _lock:
+            lista = _carregar_solicitacoes()
+            alvo = next((s for s in lista if s.get('id') == dados['id']), None)
+            if not alvo:
+                return jsonify({"ok": False, "msg": "Solicitação não encontrada."}), 404
 
-    if alvo.get('status') == 'CANCELADA':
-        return jsonify({"ok": False, "msg": "Esta solicitação já está cancelada."}), 400
+            # NOVO: verifica autorização
+            if not _pode_editar(alvo):
+                return jsonify({"ok": False, "msg": "Acesso negado."}), 403
 
-    motivo = (dados.get('motivo') or '').strip()[:500]
-    alvo['status'] = 'CANCELADA'
-    alvo['cancelada_em'] = datetime.now().isoformat(timespec='seconds')
-    alvo['cancelada_por'] = session.get('nome', session.get('usuario', ''))
-    alvo['motivo_cancelamento'] = motivo
+            if alvo.get('status') == 'CANCELADA':
+                return jsonify({"ok": False, "msg": "Esta solicitação já está cancelada."}), 400
 
-    # 1. SALVA PRIMEIRO
-    _salvar_solicitacoes(lista)
+            motivo = (dados.get('motivo') or '').strip()[:500]
+            alvo['status'] = 'CANCELADA'
+            alvo['cancelada_em'] = datetime.now().isoformat(timespec='seconds')
+            alvo['cancelada_por'] = session.get(
+                'nome', session.get('usuario', ''))
+            alvo['motivo_cancelamento'] = motivo
 
-    # 2. Tenta enviar e-mail
+            _salvar_solicitacoes(lista)
+    except FileLockTimeout:
+        return jsonify({"ok": False, "msg": "Sistema ocupado."}), 503
+
     cfg = _carregar_config()
     destinatarios = cfg.get('destinatarios', [])
 
@@ -459,7 +528,8 @@ def cancelar():
 
     assunto = f"[Reunião CANCELADA] {alvo['sala']} - {alvo['data']} {alvo['hora_inicio']}"
     corpo = _montar_email_cancelamento(alvo)
-    ok, msg = email_sender.enviar_email(destinatarios, assunto, corpo, tipo="reuniao_cancel")
+    ok, msg = email_sender.enviar_email(
+        destinatarios, assunto, corpo, tipo="reuniao_cancel")
 
     if not ok:
         return jsonify({
@@ -477,79 +547,105 @@ def reagendar():
     if not dados or not dados.get('id'):
         return jsonify({"ok": False, "msg": "ID inválido."}), 400
 
-    lista = _carregar_solicitacoes()
-    alvo = next((s for s in lista if s.get('id') == dados['id']), None)
-    if not alvo:
-        return jsonify({"ok": False, "msg": "Solicitação não encontrada."}), 404
-
-    if alvo.get('status') == 'CANCELADA':
-        return jsonify({"ok": False, "msg": "Não é possível alterar uma solicitação cancelada."}), 400
-
-    if not dados.get('sala') or not dados.get('data') or not dados.get('hora_inicio') or not dados.get('limpeza'):
-        return jsonify({"ok": False, "msg": "Preencha todos os campos obrigatórios."}), 400
-
-    hora_fim = (dados.get('hora_fim') or '').strip()
-    if not hora_fim:
-        hora_fim = 'Não informado'
-
-    ok_data, msg_data = _validar_data_hora(
-        dados.get('data'), dados.get('hora_inicio'), hora_fim
-    )
-    if not ok_data:
-        return jsonify({"ok": False, "msg": msg_data}), 400
-
-    antigo = {k: v for k, v in alvo.items()}
-
     try:
-        cafe_qtd = int(dados.get('cafe_qtd') or 0)
-        agua_qtd = int(dados.get('agua_qtd') or 0)
-        refri_qtd = int(dados.get('refrigerante_qtd') or 0)
-    except (TypeError, ValueError):
-        return jsonify({"ok": False, "msg": "Quantidades inválidas."}), 400
+        with _lock:
+            lista = _carregar_solicitacoes()
+            alvo = next((s for s in lista if s.get('id') == dados['id']), None)
+            if not alvo:
+                return jsonify({"ok": False, "msg": "Solicitação não encontrada."}), 404
 
-    alvo['sala'] = dados.get('sala')
-    alvo['data'] = dados.get('data')
-    alvo['hora_inicio'] = dados.get('hora_inicio')
-    alvo['hora_fim'] = hora_fim
-    alvo['limpeza'] = dados.get('limpeza')
-    alvo['cafe'] = bool(dados.get('cafe'))
-    alvo['cafe_qtd'] = cafe_qtd
-    alvo['agua'] = bool(dados.get('agua'))
-    alvo['agua_qtd'] = agua_qtd
-    alvo['refrigerante'] = bool(dados.get('refrigerante'))
-    alvo['refrigerante_qtd'] = refri_qtd
-    alvo['importancia'] = dados.get('importancia', alvo.get('importancia'))
-    alvo['observacao'] = (dados.get('observacao') or '').strip()[:1000]
+            # NOVO: verifica autorização
+            if not _pode_editar(alvo):
+                return jsonify({"ok": False, "msg": "Acesso negado."}), 403
 
-    alvo['status'] = 'REAGENDADA'
-    alvo['alterada_em'] = datetime.now().isoformat(timespec='seconds')
-    alvo['alterada_por'] = session.get('nome', session.get('usuario', ''))
+            if alvo.get('status') == 'CANCELADA':
+                return jsonify({"ok": False, "msg": "Não é possível alterar uma solicitação cancelada."}), 400
 
-    rotulos = {
-        'sala': 'Sala', 'data': 'Data', 'hora_inicio': 'Hora Início', 'hora_fim': 'Hora Fim',
-        'limpeza': 'Limpeza', 'importancia': 'Importância', 'observacao': 'Observação',
-        'cafe': 'Café', 'agua': 'Água', 'refrigerante': 'Refrigerante',
-    }
-    alteracoes = []
-    for campo, rotulo in rotulos.items():
-        antes = antigo.get(campo)
-        depois = alvo.get(campo)
-        if campo in ('cafe', 'agua', 'refrigerante'):
-            antes_txt = 'Sim' if antes else 'Não'
-            depois_txt = 'Sim' if depois else 'Não'
-        else:
-            antes_txt = str(antes or '—')
-            depois_txt = str(depois or '—')
-        if antes_txt != depois_txt:
-            alteracoes.append({'campo': rotulo, 'antes': antes_txt, 'depois': depois_txt})
+            if not dados.get('sala') or not dados.get('data') or not dados.get('hora_inicio') or not dados.get('limpeza'):
+                return jsonify({"ok": False, "msg": "Preencha todos os campos obrigatórios."}), 400
 
-    if not alteracoes:
-        return jsonify({"ok": False, "msg": "Nenhuma alteração detectada."}), 400
+            if dados.get('sala') not in SALAS_PERMITIDAS:
+                return jsonify({"ok": False, "msg": "Sala inválida."}), 400
 
-    # 1. SALVA PRIMEIRO
-    _salvar_solicitacoes(lista)
+            hora_fim = (dados.get('hora_fim') or '').strip()
+            if not hora_fim:
+                hora_fim = 'Não informado'
 
-    # 2. Tenta enviar e-mail
+            ok_data, msg_data = _validar_data_hora(
+                dados.get('data'), dados.get('hora_inicio'), hora_fim
+            )
+            if not ok_data:
+                return jsonify({"ok": False, "msg": msg_data}), 400
+
+            # NOVO: valida conflito com outras reservas
+            conflito = _ha_conflito(
+                lista, dados['sala'], dados['data'],
+                dados['hora_inicio'], hora_fim,
+            )
+            if conflito and conflito.get('id') != alvo.get('id'):
+                return jsonify({
+                    "ok": False,
+                    "msg": (
+                        f"Conflito de agenda com outra reserva: "
+                        f"{conflito.get('hora_inicio')} às {_horario_fim(conflito)}."
+                    ),
+                }), 409
+
+            antigo = {k: v for k, v in alvo.items()}
+
+            try:
+                cafe_qtd = int(dados.get('cafe_qtd') or 0)
+                agua_qtd = int(dados.get('agua_qtd') or 0)
+                refri_qtd = int(dados.get('refrigerante_qtd') or 0)
+            except (TypeError, ValueError):
+                return jsonify({"ok": False, "msg": "Quantidades inválidas."}), 400
+
+            alvo['sala'] = dados.get('sala')
+            alvo['data'] = dados.get('data')
+            alvo['hora_inicio'] = dados.get('hora_inicio')
+            alvo['hora_fim'] = hora_fim
+            alvo['limpeza'] = dados.get('limpeza')
+            alvo['cafe'] = bool(dados.get('cafe'))
+            alvo['cafe_qtd'] = cafe_qtd
+            alvo['agua'] = bool(dados.get('agua'))
+            alvo['agua_qtd'] = agua_qtd
+            alvo['refrigerante'] = bool(dados.get('refrigerante'))
+            alvo['refrigerante_qtd'] = refri_qtd
+            alvo['importancia'] = dados.get(
+                'importancia', alvo.get('importancia'))
+            alvo['observacao'] = (dados.get('observacao') or '').strip()[:1000]
+
+            alvo['status'] = 'REAGENDADA'
+            alvo['alterada_em'] = datetime.now().isoformat(timespec='seconds')
+            alvo['alterada_por'] = session.get(
+                'nome', session.get('usuario', ''))
+
+            rotulos = {
+                'sala': 'Sala', 'data': 'Data', 'hora_inicio': 'Hora Início', 'hora_fim': 'Hora Fim',
+                'limpeza': 'Limpeza', 'importancia': 'Importância', 'observacao': 'Observação',
+                'cafe': 'Café', 'agua': 'Água', 'refrigerante': 'Refrigerante',
+            }
+            alteracoes = []
+            for campo, rotulo in rotulos.items():
+                antes = antigo.get(campo)
+                depois = alvo.get(campo)
+                if campo in ('cafe', 'agua', 'refrigerante'):
+                    antes_txt = 'Sim' if antes else 'Não'
+                    depois_txt = 'Sim' if depois else 'Não'
+                else:
+                    antes_txt = str(antes or '—')
+                    depois_txt = str(depois or '—')
+                if antes_txt != depois_txt:
+                    alteracoes.append(
+                        {'campo': rotulo, 'antes': antes_txt, 'depois': depois_txt})
+
+            if not alteracoes:
+                return jsonify({"ok": False, "msg": "Nenhuma alteração detectada."}), 400
+
+            _salvar_solicitacoes(lista)
+    except FileLockTimeout:
+        return jsonify({"ok": False, "msg": "Sistema ocupado."}), 503
+
     cfg = _carregar_config()
     destinatarios = cfg.get('destinatarios', [])
 
@@ -562,7 +658,8 @@ def reagendar():
 
     assunto = f"[Reunião ALTERADA] {alvo['sala']} - {alvo['data']} {alvo['hora_inicio']}"
     corpo = _montar_email_alteracao(alvo, alteracoes)
-    ok, msg = email_sender.enviar_email(destinatarios, assunto, corpo, tipo="reuniao_alt")
+    ok, msg = email_sender.enviar_email(
+        destinatarios, assunto, corpo, tipo="reuniao_alt")
 
     if not ok:
         return jsonify({

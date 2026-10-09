@@ -144,8 +144,8 @@
                 </div>
 
                 <button class="btn btn-primary w-100" id="btnEnviarSolicitacao" onclick="enviarSolicitacao()">
-    <i class="fas fa-paper-plane me-2"></i>Enviar Solicitação
-</button>
+                    <i class="fas fa-paper-plane me-2"></i>Enviar Solicitação
+                </button>
             </div>
         </div>
     </div>
@@ -206,10 +206,10 @@
                                 </div>
                                 {% if s.pode_editar %}
                                 <div class="mt-2 d-flex gap-2">
-                                    <button class="btn btn-sm btn-outline-warning" onclick='abrirReagendar({{ s|tojson }})'>
+                                    <button class="btn btn-sm btn-outline-warning" onclick="abrirReagendarPorId({{ s.id }})">
                                         <i class="fas fa-edit me-1"></i>Reagendar
                                     </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick='abrirCancelar({{ s|tojson }})'>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="abrirCancelarPorId({{ s.id }})">
                                         <i class="fas fa-times me-1"></i>Cancelar
                                     </button>
                                 </div>
@@ -307,8 +307,8 @@
                 </button>
                 <div class="d-flex gap-2">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Voltar</button>
-                       <button class="btn btn-danger" onclick="confirmarCancelamento()">
-                         <i class="fas fa-times me-1"></i>Confirmar Cancelamento
+                    <button class="btn btn-danger" id="btnConfirmarCancelamento" onclick="confirmarCancelamento()">
+                        <i class="fas fa-times me-1"></i>Confirmar Cancelamento
                     </button>
                 </div>
             </div>
@@ -427,9 +427,9 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                 <button class="btn btn-warning" id="btnConfirmarReagendamento" onclick="confirmarReagendamento()">
-    <i class="fas fa-check me-1"></i>Salvar Alterações
-</button>           
+                <button class="btn btn-warning" id="btnConfirmarReagendamento" onclick="confirmarReagendamento()">
+                    <i class="fas fa-check me-1"></i>Salvar Alterações
+                </button>
             </div>
         </div>
     </div>
@@ -444,13 +444,13 @@
     // ====== FLATPICKR ======
     flatpickr.localize(flatpickr.l10ns.pt);
 
-        const configData = {
+    const configData = {
         dateFormat: "Y-m-d",
         altInput: true,
         altFormat: "d/m/Y",
         allowInput: false,
         disableMobile: true,
-        minDate: "today"        // <--- ADICIONE ESSA LINHA
+        minDate: "today"
     };
     const configHora = {
         enableTime: true,
@@ -469,6 +469,28 @@
     flatpickr("#r_data", configData);
     flatpickr("#r_hora_inicio", configHora);
     flatpickr("#r_hora_fim", configHora);
+
+    // ====== OBJETO GLOBAL COM TODOS OS DADOS (busca segura por ID) ======
+    const TODAS_SOLICITACOES = {{ (proximas + historico)|tojson }};
+
+    function _buscarPorId(id) {
+        return TODAS_SOLICITACOES.find(x => x.id === id);
+    }
+
+    let idAlvo = null;
+    let modalCancelar, modalReagendar;
+
+    function abrirCancelarPorId(id) {
+        const s = _buscarPorId(id);
+        if (!s) { alert('Erro: reunião não encontrada.'); return; }
+        abrirCancelar(s);
+    }
+
+    function abrirReagendarPorId(id) {
+        const s = _buscarPorId(id);
+        if (!s) { alert('Erro: reunião não encontrada.'); return; }
+        abrirReagendar(s);
+    }
 
     // ====== CHECKBOXES ======
     document.getElementById('f_cafe').addEventListener('change', function() {
@@ -490,15 +512,14 @@
         document.getElementById('r_box_refri').classList.toggle('d-none', !this.checked);
     });
 
-        // ====== ENVIAR NOVA SOLICITAÇÃO ======
-        async function enviarSolicitacao() {
+    // ====== ENVIAR NOVA SOLICITAÇÃO ======
+    async function enviarSolicitacao() {
         const alerta = document.getElementById('alertaForm');
         const btn = document.getElementById('btnEnviarSolicitacao');
         const sala = document.querySelector('input[name="sala"]:checked');
         const limpeza = document.querySelector('input[name="limpeza"]:checked');
         const importancia = document.querySelector('input[name="importancia"]:checked');
 
-        // Verifica campos obrigatórios
         const faltando = [];
         if (!sala) faltando.push('Sala');
         if (!document.getElementById('f_data').value) faltando.push('Data');
@@ -512,7 +533,6 @@
             return;
         }
 
-        // Validação de data no passado
         const dataInput = document.getElementById('f_data').value;
         if (dataInput) {
             const hoje = new Date();
@@ -563,7 +583,6 @@
             observacao: document.getElementById('f_observacao').value
         };
 
-        // ===== ATIVA O ESTADO "ENVIANDO" NO BOTÃO =====
         const textoOriginal = btn.innerHTML;
         btn.disabled = true;
         btn.classList.add('disabled');
@@ -582,7 +601,6 @@
             const j = await r.json();
 
             if (j.ok) {
-                // Sucesso!
                 btn.classList.remove('btn-primary');
                 btn.classList.add('btn-success');
                 btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Enviado com sucesso!';
@@ -595,7 +613,6 @@
                 }
                 setTimeout(() => location.reload(), 2200);
             } else {
-                // Erro de validação
                 btn.disabled = false;
                 btn.classList.remove('disabled');
                 btn.innerHTML = textoOriginal;
@@ -604,7 +621,6 @@
                 alerta.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>' + j.msg;
             }
         } catch (e) {
-            // Erro de conexão
             btn.disabled = false;
             btn.classList.remove('disabled');
             btn.innerHTML = textoOriginal;
@@ -614,13 +630,27 @@
         }
     }
 
+    // ====== MODAIS ======
+    function abrirCancelar(s) {
+        idAlvo = s.id;
+        const textoHora = (s.hora_fim === 'Não informado')
+            ? `a partir das ${s.hora_inicio}`
+            : `${s.hora_inicio} às ${s.hora_fim}`;
+        document.getElementById('cancelar_resumo').textContent =
+            `${s.sala} — ${s.data.split('-').reverse().join('/')} ${textoHora}`;
+        document.getElementById('cancelar_motivo').value = '';
+        if (!modalCancelar) {
+            modalCancelar = new bootstrap.Modal(document.getElementById('modalCancelar'));
+        }
+        modalCancelar.show();
+    }
+
     function abrirReagendar(s) {
         idAlvo = s.id;
 
         document.querySelector(`input[name="r_sala"][value="${s.sala}"]`).checked = true;
         document.getElementById('r_data').value = s.data || '';
         document.getElementById('r_hora_inicio').value = s.hora_inicio || '';
-        // Se hora_fim for "Não informado", deixa vazio
         const horaFim = (s.hora_fim && s.hora_fim !== 'Não informado') ? s.hora_fim : '';
         document.getElementById('r_hora_fim').value = horaFim;
         if (s.limpeza) {
@@ -652,12 +682,12 @@
 
     function trocarParaReagendar() {
         if (modalCancelar) modalCancelar.hide();
-        const todas = {{ (proximas + historico)|tojson }};
-        const alvo = todas.find(x => x.id === idAlvo);
+        const alvo = _buscarPorId(idAlvo);
         if (alvo) abrirReagendar(alvo);
     }
 
-        async function confirmarCancelamento() {
+    // ====== CONFIRMAR CANCELAMENTO ======
+    async function confirmarCancelamento() {
         if (!idAlvo) return;
         const motivo = document.getElementById('cancelar_motivo').value;
         const btn = document.getElementById('btnConfirmarCancelamento');
@@ -695,7 +725,9 @@
             alert('Erro de conexão com o servidor.');
         }
     }
-            async function confirmarReagendamento() {
+
+    // ====== CONFIRMAR REAGENDAMENTO ======
+    async function confirmarReagendamento() {
         if (!idAlvo) return;
         const alerta = document.getElementById('alertaReagendar');
         const btn = document.getElementById('btnConfirmarReagendamento');
@@ -717,7 +749,6 @@
             return;
         }
 
-        // Validação de data no passado
         const dataInput = document.getElementById('r_data').value;
         if (dataInput) {
             const hoje = new Date();
@@ -731,7 +762,6 @@
             }
         }
 
-        // Validação de horário
         const rHoraIni = document.getElementById('r_hora_inicio').value;
         const rHoraFim = document.getElementById('r_hora_fim').value;
         if (rHoraFim && rHoraFim !== '') {
@@ -769,7 +799,6 @@
             observacao: document.getElementById('r_observacao').value
         };
 
-        // Ativa estado "enviando" no botão
         const textoOriginal = btn.innerHTML;
         btn.disabled = true;
         btn.classList.add('disabled');

@@ -1,28 +1,34 @@
 # -*- coding: utf-8 -*-
-import email_sender
-from database import db, init_db
-from reunioes import reunioes_bp   # <--- Tem que ter isso
-import permissoes
-import usuarios as mod_usuarios
-import unicodedata
-import os
-import json
-import csv
-import hashlib
-import re
-import glob
-import shutil
-import secrets
-import time
-import tempfile
-import threading
-from contextlib import contextmanager
-from datetime import datetime
-from collections import defaultdict, Counter
-from difflib import SequenceMatcher
-from functools import wraps
 from flask import (Flask, render_template, request, jsonify, send_file,
                    session, redirect, url_for)
+from flask_talisman import Talisman
+from extensions import limiter, csrf
+from functools import wraps
+from difflib import SequenceMatcher
+from collections import defaultdict, Counter
+from datetime import datetime, timedelta
+from contextlib import contextmanager
+import threading
+import tempfile
+import time
+import secrets
+import shutil
+import glob
+import re
+import hashlib
+import csv
+import json
+import os
+import unicodedata
+import permissoes
+import usuarios as mod_usuarios
+import auditoria
+from reunioes import reunioes_bp
+from database import db, init_db
+import email_sender
+from dotenv import load_dotenv
+load_dotenv()
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DADOS = os.path.join(BASE_DIR, "dados")
@@ -31,11 +37,51 @@ os.makedirs(DADOS, exist_ok=True)
 app = Flask(__name__)
 init_db(app)
 app.register_blueprint(reunioes_bp)
+
+ENV_PROD = os.environ.get("FLASK_ENV", "").lower() == "production"
+
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=os.environ.get("FLASK_COOKIE_SECURE", "").lower()
-    in {"1", "true", "yes"},
+    SESSION_COOKIE_SECURE=ENV_PROD or (
+        os.environ.get("FLASK_COOKIE_SECURE", "").lower() in {
+            "1", "true", "yes"}
+    ),
+    MAX_CONTENT_LENGTH=1 * 1024 * 1024,
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
+)
+
+limiter.init_app(app)
+csrf.init_app(app)
+csrf.exempt("api_rodar_alertas_cron")
+
+Talisman(
+    app,
+    force_https=ENV_PROD,
+    strict_transport_security=ENV_PROD,
+    session_cookie_secure=ENV_PROD,
+    content_security_policy={
+        "default-src": "'self'",
+        "script-src": [
+            "'self'", "'unsafe-inline'",
+            "https://cdn.jsdelivr.net",
+            "https://cdnjs.cloudflare.com",
+        ],
+        "style-src": [
+            "'self'", "'unsafe-inline'",
+            "https://cdn.jsdelivr.net",
+            "https://cdnjs.cloudflare.com",
+            "https://fonts.googleapis.com",
+        ],
+        "font-src": [
+            "'self'",
+            "https://fonts.gstatic.com",
+            "https://cdnjs.cloudflare.com",
+        ],
+        "img-src": ["'self'", "data:"],
+        "connect-src": ["'self'", "https://cdn.jsdelivr.net"],
+        "frame-src": ["'self'"],
+    },
 )
 
 
@@ -64,10 +110,35 @@ def _carregar_chave_sessao():
 app.secret_key = _carregar_chave_sessao()
 
 
+@app.errorhandler(500)
+def _erro_500(e):
+    app.logger.exception("Erro 500 não tratado")
+    return render_template(
+        "erro.html",
+        codigo=500,
+        titulo="Erro interno",
+        mensagem="Ocorreu um erro inesperado. A equipe de TI foi notificada.",
+        detalhe=None,
+    ), 500
+
+
+@app.errorhandler(404)
+def _erro_404(e):
+    return render_template(
+        "erro.html",
+        codigo=404,
+        titulo="Página não encontrada",
+        mensagem="A página que você tentou acessar não existe.",
+        detalhe=None,
+    ), 404
+
+
 RECURSO_POR_ENDPOINT = {
     "dashboard": "dashboard",
-    "reunioes.reunioes_view": "reunioes",      # <--- ADICIONE
-    "reunioes.solicitar": "reunioes",          # <--- ADICIONE
+    "reunioes.reunioes_view": "reunioes",
+    "reunioes.solicitar": "reunioes",
+    "reunioes.cancelar": "reunioes",
+    "reunioes.reagendar": "reunioes",
     "bens_view": "bens", "bens_salvar": "bens", "bens_transferir": "movimentacoes",
     "bens_excluir": "bens", "bens_exportar": "bens",
     "planilha_view": "planilha", "api_bens_celula": "planilha",
@@ -114,7 +185,7 @@ def perfil_home():
     destinos = (
         ("dashboard.ver", "dashboard"),
         ("recepcao.ver", "recepcao_view"),
-        ("reunioes.ver", "reunioes.reunioes_view"),   # <--- ADICIONE
+        ("reunioes.ver", "reunioes.reunioes_view"),
         ("bens.ver", "bens_view"),
         ("planilha.ver", "planilha_view"),
         ("funcionarios.ver", "funcionarios_view"),
@@ -212,10 +283,6 @@ CAMPOS_BEM_EDITAVEIS = {
 }
 
 
-# ============================================================
-# CACHES GLOBAIS
-# ============================================================
-
 _cache_bens = {"timestamp": 0, "dados": None}
 CACHE_BENS_TTL = 60
 
@@ -260,7 +327,8 @@ def _travar_csv():
                     if os.name == "nt":
                         import msvcrt
                         arquivo_lock.seek(0)
-                        msvcrt.locking(arquivo_lock.fileno(), msvcrt.LK_UNLCK, 1)
+                        msvcrt.locking(arquivo_lock.fileno(),
+                                       msvcrt.LK_UNLCK, 1)
                     else:
                         import fcntl
                         fcntl.flock(arquivo_lock.fileno(), fcntl.LOCK_UN)
@@ -277,7 +345,6 @@ def _com_csv_travado(funcao):
 
 
 def _invalidar_tudo():
-    """Invalida TODOS os caches. Chamado em qualquer save."""
     _cache_bens["timestamp"] = 0
     _cache_bens["dados"] = None
     _cache_idx_funcs["timestamp"] = 0
@@ -285,10 +352,6 @@ def _invalidar_tudo():
     _cache_pessoas["timestamp"] = 0
     _cache_pessoas["dados"] = None
 
-
-# ============================================================
-# CSV / LEITURA / ESCRITA
-# ============================================================
 
 def _achar_csv():
     for p in [os.path.join(BASE_DIR, "Levantamento*.csv"),
@@ -322,7 +385,8 @@ def _detectar_encoding(path):
 
 def _backup_csv():
     if not CSV_PATH or not os.path.exists(CSV_PATH):
-        raise RuntimeError("CSV do inventário ausente; o backup não foi criado.")
+        raise RuntimeError(
+            "CSV do inventário ausente; o backup não foi criado.")
     ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     nome = os.path.basename(CSV_PATH)
     os.makedirs(BACKUP_DIR, exist_ok=True)
@@ -330,7 +394,6 @@ def _backup_csv():
 
 
 def _csv_carregar_raw():
-    """Lê o CSV do disco SEM cache (usada internamente)."""
     global CSV_PATH
     if not CSV_PATH:
         CSV_PATH = _achar_csv()
@@ -424,7 +487,8 @@ def _load(path, default):
         try:
             return json.load(f)
         except json.JSONDecodeError as erro:
-            raise ValueError(f"Arquivo de dados inválido: {os.path.basename(path)}") from erro
+            raise ValueError(
+                f"Arquivo de dados inválido: {os.path.basename(path)}") from erro
 
 
 def _save(path, data):
@@ -445,12 +509,7 @@ def _save(path, data):
         raise
 
 
-# ============================================================
-# LOADERS COM CACHE
-# ============================================================
-
 def load_bens():
-    """Leitura COM cache (60s) — não relê CSV a cada request."""
     global _cache_bens
     agora = time.time()
     if (_cache_bens["dados"] is not None and
@@ -468,7 +527,8 @@ def save_bens(lista):
         try:
             _save(ARQ_BENS, lista)
         except OSError as erro:
-            app.logger.exception("Não foi possível atualizar o espelho JSON dos bens: %s", erro)
+            app.logger.exception(
+                "Não foi possível atualizar o espelho JSON dos bens: %s", erro)
         _invalidar_tudo()
 
 
@@ -480,7 +540,6 @@ def _versao_bem(bem):
 
 
 def load_funcs():
-    """Carrega funcionários e garante IDs sequenciais."""
     funcs = _load(ARQ_FUNC, [])
     mudou = False
     maior_id = 0
@@ -502,13 +561,21 @@ def load_funcs():
 
 
 def load_deps(): return _load(ARQ_DEP, [])
+
+
 def save_funcs(d):
     _save(ARQ_FUNC, d)
     _invalidar_tudo()
+
+
 def load_ferias(): return _load(ARQ_FER, [])
+
+
 def save_ferias(d):
     _save(ARQ_FER, d)
     _invalidar_tudo()
+
+
 def load_projetos(): return _load(ARQ_PROJ, [])
 def save_projetos(d): _save(ARQ_PROJ, d)
 
@@ -547,10 +614,6 @@ def validar_status_bem(status):
 def next_id(lista):
     return (max([int(x.get("id", 0) or 0) for x in lista]) + 1) if lista else 1
 
-
-# ============================================================
-# NORMALIZAÇÃO
-# ============================================================
 
 def normalizar(s):
     return re.sub(r"\s+", " ", (s or "").strip())
@@ -644,12 +707,7 @@ def _tokens_nome(nome):
     return set(norm_nome(nome).split())
 
 
-# ============================================================
-# ÍNDICES DE FUNCIONÁRIOS (busca O(1))
-# ============================================================
-
 def _construir_indices_funcs(funcs):
-    """Constrói índices O(1) para busca de funcionário por nome."""
     idx = {
         "por_norm": {},
         "por_p1_pu": {},
@@ -672,7 +730,6 @@ def _construir_indices_funcs(funcs):
 
 
 def _get_indices_funcs():
-    """Retorna índices em cache."""
     global _cache_idx_funcs
     agora = time.time()
     if (_cache_idx_funcs["dados"] is not None and
@@ -685,10 +742,6 @@ def _get_indices_funcs():
 
 
 def _achar_funcionario(nome_bem):
-    """
-    Busca RÁPIDA usando índices. O(1) em 95% dos casos.
-    Ordem: exato → 1º+últ → subconjunto → fuzzy.
-    """
     if not nome_bem:
         return None
     nn = norm_nome(nome_bem)
@@ -697,7 +750,6 @@ def _achar_funcionario(nome_bem):
 
     idx = _get_indices_funcs()
 
-    # 1. Exato — O(1)
     f = idx["por_norm"].get(nn)
     if f:
         return f
@@ -708,12 +760,10 @@ def _achar_funcionario(nome_bem):
     p1 = partes[0]
     pu = partes[-1] if len(partes) > 1 else partes[0]
 
-    # 2. Primeiro + último — O(1)
     f = idx["por_p1_pu"].get((p1, pu))
     if f:
         return f
 
-    # 3. Subconjunto — só com candidatos do mesmo 1º nome
     candidatos = idx["por_p1"].get(p1, [])
     tok_bem = set(partes)
     for cand in candidatos:
@@ -721,12 +771,12 @@ def _achar_funcionario(nome_bem):
         if tok_bem <= tok_c or tok_c <= tok_bem:
             return cand
 
-    # 4. Fuzzy — só com candidatos do mesmo 1º nome (rápido)
     if candidatos:
         melhor = None
         melhor_sim = 0
         for cand in candidatos:
-            sim = SequenceMatcher(None, nn, norm_nome(cand.get("nome", ""))).ratio()
+            sim = SequenceMatcher(None, nn, norm_nome(
+                cand.get("nome", ""))).ratio()
             if sim > melhor_sim:
                 melhor_sim = sim
                 melhor = cand
@@ -738,10 +788,6 @@ def _achar_funcionario(nome_bem):
 
     return None
 
-
-# ============================================================
-# FÉRIAS
-# ============================================================
 
 def ferias_ativas_set():
     ferias = load_ferias()
@@ -818,9 +864,11 @@ def _listar_ramais(bens, chaves_ferias):
 
     lista = []
     for pessoa in por_pessoa.values():
-        ramais = sorted(pessoa["ramais"], key=lambda valor: (valor.casefold(), valor))
+        ramais = sorted(pessoa["ramais"], key=lambda valor: (
+            valor.casefold(), valor))
         departamentos = sorted(
-            pessoa["departamentos"], key=lambda valor: (valor.casefold(), valor)
+            pessoa["departamentos"], key=lambda valor: (
+                valor.casefold(), valor)
         )
         lista.append({
             "nome": pessoa["nome"],
@@ -862,15 +910,7 @@ def ferias_em_andamento_lista():
     return lista
 
 
-# ============================================================
-# AGRUPAMENTO OTIMIZADO (usa índices + cache)
-# ============================================================
-
 def _pessoas_agrupadas():
-    """
-    Agrupa usando FUNCIONÁRIOS como base oficial.
-    OTIMIZADO: O(n) em vez de O(n²). Usa índices pré-calculados.
-    """
     global _cache_pessoas
 
     agora = time.time()
@@ -882,7 +922,6 @@ def _pessoas_agrupadas():
     funcs = load_funcs()
     chaves_ferias = ferias_ativas_chaves()
 
-    # Base: 1 entrada por funcionário
     por_func = {}
     for f in funcs:
         try:
@@ -899,7 +938,6 @@ def _pessoas_agrupadas():
             "vinculado": True,
         }
 
-    # Órfãos agrupados por nome normalizado
     orfaos = {}
 
     for b in bens:
@@ -944,10 +982,6 @@ def _pessoas_agrupadas():
     _cache_pessoas = {"timestamp": agora, "dados": resultado}
     return resultado
 
-
-# ============================================================
-# MOVIMENTAÇÕES
-# ============================================================
 
 CABECALHO_MOV = ["data", "bem_id", "categoria", "patrimonio", "hostname",
                  "de_responsavel", "para_responsavel", "de_departamento",
@@ -1002,6 +1036,7 @@ def registrar_movimento(b, de_resp, de_dep, para_resp, para_dep, obs,
             "obs": obs,
             "realizado_por": realizado_por,
         })
+
 
 def _dados_graficos():
     bens = load_bens()
@@ -1072,10 +1107,6 @@ def utility_processor():
     )
 
 
-# ============================================================
-# ROTAS
-# ============================================================
-
 @app.route("/")
 def dashboard():
     if not tem_permissao("dashboard.ver"):
@@ -1129,7 +1160,8 @@ def bens_view():
     dep = request.args.get("dep") or ""
     resp = request.args.get("resp") or ""
     if q:
-        todos = [b for b in todos if q in json.dumps(b, ensure_ascii=False).lower()]
+        todos = [b for b in todos if q in json.dumps(
+            b, ensure_ascii=False).lower()]
     if cat:
         todos = [b for b in todos if (b.get("categoria") or "") == cat]
     if dep:
@@ -1158,9 +1190,12 @@ def bens_view():
         bens=bens,
         versoes=versoes,
         movimentacoes_por_bem=movimentacoes_por_bem,
-        categorias=sorted({b.get("categoria") for b in inventario_completo if b.get("categoria")}),
-        departamentos=sorted({b.get("departamento") for b in inventario_completo if b.get("departamento")}),
-        responsaveis=sorted({normalizar(b.get("responsavel")) for b in inventario_completo if b.get("responsavel")}),
+        categorias=sorted({b.get("categoria")
+                          for b in inventario_completo if b.get("categoria")}),
+        departamentos=sorted({b.get("departamento")
+                             for b in inventario_completo if b.get("departamento")}),
+        responsaveis=sorted({normalizar(b.get("responsavel"))
+                            for b in inventario_completo if b.get("responsavel")}),
         filtros={"q": q, "cat": cat, "dep": dep, "resp": resp},
         total_filtrado=total_filtrado,
         pagina=pagina,
@@ -1209,7 +1244,8 @@ def bens_salvar():
             }), 409
         for i, b in enumerate(bens):
             if b.get("id") == bid:
-                bens[i] = {**b, **item, "atualizado_em": datetime.now().isoformat()}
+                bens[i] = {**b, **item,
+                           "atualizado_em": datetime.now().isoformat()}
                 break
         msg = "Bem atualizado!"
     else:
@@ -1225,10 +1261,10 @@ def bens_salvar():
         "versao": _versao_bem(atualizado) if atualizado else None,
     })
 
+
 @app.route("/bens/transferir", methods=["POST"])
 @_com_csv_travado
 def bens_transferir():
-    """Transfere um bem para outro responsável/departamento e registra no histórico."""
     d = request.get_json(silent=True)
     if not isinstance(d, dict):
         return jsonify({"ok": False, "msg": "Dados da transferência inválidos."}), 400
@@ -1269,6 +1305,7 @@ def bens_transferir():
 
     save_bens(bens)
     return jsonify({"ok": True, "msg": f"Bem transferido para {novo_resp}!"})
+
 
 @app.route("/bens/excluir/<int:bid>", methods=["POST"])
 @_com_csv_travado
@@ -1313,7 +1350,8 @@ def bens_excluir(bid):
                 BACKUP_DIR, f"{carimbo}__{os.path.basename(ARQ_MOV)}"
             ))
     except OSError:
-        app.logger.exception("Falha ao criar backup antes de excluir o bem %s", bid)
+        app.logger.exception(
+            "Falha ao criar backup antes de excluir o bem %s", bid)
         return jsonify({
             "ok": False,
             "msg": "Não foi possível criar o backup. O bem e o histórico não foram excluídos.",
@@ -1467,7 +1505,6 @@ def funcionarios_view():
     funcs = load_funcs()
     bens = load_bens()
 
-    # Mapa: id → qtd bens
     cont_bens = defaultdict(int)
     for b in bens:
         nome_bem = normalizar(b.get("responsavel") or "")
@@ -1517,7 +1554,8 @@ def funcionarios_salvar():
             fid = int(fid)
         except (TypeError, ValueError):
             return jsonify({"ok": False, "msg": "ID do funcionário inválido."}), 400
-        funcionario = next((f for f in funcs if int(f.get("id") or 0) == fid), None)
+        funcionario = next(
+            (f for f in funcs if int(f.get("id") or 0) == fid), None)
         if not funcionario:
             return jsonify({"ok": False, "msg": "Funcionário não encontrado."}), 404
     duplicado = next(
@@ -1548,7 +1586,6 @@ def funcionarios_salvar():
 
 @app.route("/funcionarios/excluir/<int:fid>", methods=["POST"])
 def funcionarios_excluir(fid):
-    """Exclui funcionário por ID (mais confiável que índice)."""
     funcs = load_funcs()
     funcionario = next(
         (f for f in funcs if str(f.get("id")) == str(fid)),
@@ -1630,7 +1667,8 @@ def bem_detalhe(bid):
                 for movimento in csv.DictReader(arquivo)
                 if str(movimento.get("bem_id", "")) == str(bid)
             ]
-    historico.sort(key=lambda movimento: movimento.get("data", ""), reverse=True)
+    historico.sort(key=lambda movimento: movimento.get(
+        "data", ""), reverse=True)
     return render_template("bem_detalhe.html", bem=bem, historico=historico)
 
 
@@ -1649,7 +1687,8 @@ def alerta_funcionario_resolver(alerta_id):
     if not alerta.get("resolvido"):
         alerta["resolvido"] = True
         alerta["resolvido_em"] = datetime.now().isoformat(timespec="seconds")
-        alerta["resolvido_por"] = session.get("nome", session.get("usuario", ""))
+        alerta["resolvido_por"] = session.get(
+            "nome", session.get("usuario", ""))
         save_alertas_funcionarios(alertas)
     return jsonify({"ok": True, "msg": "Alerta marcado como resolvido."})
 
@@ -1767,7 +1806,8 @@ def movimentacoes_view():
             linhas = list(csv.DictReader(f))
     q = (request.args.get("q") or "").lower()
     if q:
-        linhas = [l for l in linhas if q in json.dumps(l, ensure_ascii=False).lower()]
+        linhas = [l for l in linhas if q in json.dumps(
+            l, ensure_ascii=False).lower()]
     return render_template("movimentacoes.html",
                            movimentacoes=list(reversed(linhas)),
                            total=len(linhas), filtros={"q": q})
@@ -1863,7 +1903,8 @@ def ferias_salvar():
     ferias = load_ferias()
     idx = d.get("idx")
     if idx is not None and (
-        not isinstance(idx, int) or isinstance(idx, bool) or not 0 <= idx < len(ferias)
+        not isinstance(idx, int) or isinstance(
+            idx, bool) or not 0 <= idx < len(ferias)
     ):
         return jsonify({"ok": False, "msg": "Registro de férias não encontrado."}), 404
     status_informado = d.get("status")
@@ -1891,26 +1932,27 @@ def ferias_salvar():
     }
     if item["status"] not in status_permitidos:
         return jsonify({"ok": False, "msg": "Status de férias inválido."}), 400
+
+    for i, r in enumerate(ferias):
+        if idx is not None and i == idx:
+            continue
+        if norm_nome(r.get("nome", "")) != norm_nome(item["nome"]):
+            continue
+        try:
+            r_ini = datetime.strptime(r.get("inicio", ""), "%Y-%m-%d").date()
+            r_fim = datetime.strptime(r.get("fim", ""), "%Y-%m-%d").date()
+        except ValueError:
+            continue
+        if not (fim < r_ini or inicio > r_fim):
+            return jsonify({
+                "ok": False,
+                "msg": f"Já existe período de férias sobreposto para {item['nome']}.",
+            }), 400
+
     if idx is not None:
-        duplicada = any(
-            norm_nome(registro.get("nome", "")) == norm_nome(item["nome"])
-            and registro.get("inicio") == item["inicio"]
-            and registro.get("fim") == item["fim"]
-            and indice != idx
-            for indice, registro in enumerate(ferias)
-        )
-        if duplicada:
-            return jsonify({"ok": False, "msg": "Esse período já está cadastrado."}), 400
         ferias[idx] = {**ferias[idx], **item}
         msg = "Férias atualizadas!"
     else:
-        if any(
-            norm_nome(registro.get("nome", "")) == norm_nome(item["nome"])
-            and registro.get("inicio") == item["inicio"]
-            and registro.get("fim") == item["fim"]
-            for registro in ferias
-        ):
-            return jsonify({"ok": False, "msg": "Esse período já está cadastrado."}), 400
         ferias.append(item)
         msg = "Férias cadastradas!"
     save_ferias(ferias)
@@ -1933,7 +1975,6 @@ def ramais_view():
     chaves_ferias = ferias_ativas_chaves()
     ramais = _listar_ramais(bens, chaves_ferias)
 
-    # Agrupa por departamento (uma pessoa pode aparecer em mais de um)
     por_departamento = defaultdict(list)
     for pessoa in ramais:
         departamentos = [
@@ -1943,27 +1984,17 @@ def ramais_view():
             por_departamento[d].append(pessoa)
 
     def _categoria_departamento(nome):
-        """Retorna (categoria, ordem_dentro_da_categoria, chave_ordenacao)."""
         chave = norm_nome(nome)
-
-        # --- Linha 1: 3 colunas ---
-        # "DIRETOR EXECUTIVO" / "DIRETORIA EXECUTIVA"
         if "EXECUTIV" in chave and "DIRETOR" in chave:
             return ("destaque1", 0, chave)
-        # "DIRETOR ADMINISTRATIVO" / "DIRETORIA ADMINISTRATIVA"
         if "ADMINISTRATIV" in chave and "DIRETOR" in chave:
             return ("destaque1", 1, chave)
-        # "SECRETARIA DE DIRETORIA"
         if "SECRETARIA DE DIRETORIA" in chave:
             return ("destaque1", 2, chave)
-
-        # --- Linha 2: 4 colunas ---
         prioridades2 = ("RECEPCAO", "COPA", "PORTARIA", "SALA DE REUNIAO")
         for pos, palavra in enumerate(prioridades2):
             if palavra in chave:
                 return ("destaque2", pos, chave)
-
-        # --- Demais ---
         return ("demais", 0, chave)
 
     grupos_ordenados = []
@@ -1985,14 +2016,16 @@ def ramais_view():
         key=lambda g: (ordem_categoria[g["categoria"]], g["ordem"], g["chave"])
     )
 
-    grupos_destaque1 = [g for g in grupos_ordenados if g["categoria"] == "destaque1"]
-    grupos_destaque2 = [g for g in grupos_ordenados if g["categoria"] == "destaque2"]
-    grupos_demais    = [g for g in grupos_ordenados if g["categoria"] == "demais"]
+    grupos_destaque1 = [
+        g for g in grupos_ordenados if g["categoria"] == "destaque1"]
+    grupos_destaque2 = [
+        g for g in grupos_ordenados if g["categoria"] == "destaque2"]
+    grupos_demais = [g for g in grupos_ordenados if g["categoria"] == "demais"]
 
     return render_template(
         "ramais.html",
         ramais=ramais,
-        grupos_ramais=grupos_ordenados,     # usado nos checkboxes
+        grupos_ramais=grupos_ordenados,
         grupos_destaque1=grupos_destaque1,
         grupos_destaque2=grupos_destaque2,
         grupos_demais=grupos_demais,
@@ -2079,10 +2112,15 @@ def api_csv_info():
         mod = datetime.fromtimestamp(st.st_mtime).strftime("%d/%m/%Y %H:%M:%S")
         tam = round(st.st_size / 1024, 1)
     except OSError:
-        app.logger.exception("Não foi possível consultar os metadados do CSV do inventário.")
+        app.logger.exception("Não foi possível consultar os metadados do CSV.")
         return jsonify({"ok": False, "msg": "Não foi possível ler os metadados do CSV."}), 500
-    return jsonify({"ok": True, "caminho": CSV_PATH, "registros": len(bens),
-                    "tamanho_kb": tam, "modificado_em": mod})
+    return jsonify({
+        "ok": True,
+        "arquivo": os.path.basename(CSV_PATH),
+        "registros": len(bens),
+        "tamanho_kb": tam,
+        "modificado_em": mod,
+    })
 
 
 @app.route("/api/alertas_ferias")
@@ -2146,6 +2184,8 @@ def api_alertas_ferias():
 
 
 @app.route("/api/rodar_alertas/<token>", methods=["GET"])
+@limiter.limit("10 per minute;100 per hour",
+               key_func=lambda: request.remote_addr or "anon")
 def api_rodar_alertas_cron(token):
     token_configurado = os.environ.get("ALERTAS_CRON_TOKEN", "").strip()
     if not token_configurado:
@@ -2171,7 +2211,8 @@ def api_rodar_alertas_cron(token):
             }), 500
 
     if not token_configurado or not secrets.compare_digest(token, token_configurado):
-        app.logger.warning("Tentativa não autorizada de executar o cron de alertas.")
+        app.logger.warning(
+            "Tentativa não autorizada de executar o cron de alertas.")
         return jsonify({"ok": False, "msg": "Token inválido."}), 403
 
     try:
@@ -2179,7 +2220,8 @@ def api_rodar_alertas_cron(token):
 
         enviar_alertas.main()
     except Exception:
-        app.logger.exception("Falha ao executar a rotina automática de alertas.")
+        app.logger.exception(
+            "Falha ao executar a rotina automática de alertas.")
         return jsonify({
             "ok": False,
             "msg": "Falha ao executar os alertas automáticos.",
@@ -2224,7 +2266,8 @@ def api_admin_status_salvar():
         for b in _csv_carregar_raw()
         if normalizar(b.get("status"))
     }
-    removidos_em_uso = [nome for chave, nome in em_uso.items() if chave not in unicos]
+    removidos_em_uso = [nome for chave,
+                        nome in em_uso.items() if chave not in unicos]
     if removidos_em_uso:
         return jsonify({
             "ok": False,
@@ -2232,6 +2275,8 @@ def api_admin_status_salvar():
                    + ", ".join(sorted(removidos_em_uso, key=str.casefold)),
         }), 400
     _save(ARQ_STATUS_BENS, status_salvos)
+    auditoria.registrar("salvar_status_bens",
+                        detalhe=f"{len(status_salvos)} status")
     return jsonify({"ok": True, "msg": "Lista de status salva."})
 
 
@@ -2295,6 +2340,8 @@ def api_config_email_salvar():
     if d.get("smtp_pass"):
         cfg["smtp_pass"] = email_sender.limpar_senha(d["smtp_pass"])
     email_sender.salvar_config(cfg)
+    auditoria.registrar("salvar_config_email",
+                        detalhe=f"ativo={d['ativo']}")
     return jsonify({"ok": True, "msg": "Configurações salvas!"})
 
 
@@ -2304,9 +2351,11 @@ def api_config_email_testar():
     if not isinstance(d, dict):
         return jsonify({"ok": False, "msg": "Solicitação inválida."}), 400
     cfg = email_sender.carregar_config()
-    destinatarios = d.get("destinatarios") or cfg.get("destinatarios_ferias") or []
+    destinatarios = d.get("destinatarios") or cfg.get(
+        "destinatarios_ferias") or []
     if isinstance(destinatarios, str):
-        destinatarios = [x.strip() for x in destinatarios.split(",") if x.strip()]
+        destinatarios = [x.strip()
+                         for x in destinatarios.split(",") if x.strip()]
     if not email_sender.destinatarios_validos(destinatarios):
         return jsonify({"ok": False, "msg": "Informe endereços de e-mail válidos."}), 400
     corpo = """
@@ -2387,6 +2436,15 @@ def api_ramais_agrupados():
 
 
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute;20 per hour", methods=["POST"],
+               key_func=lambda: (
+                   "login:" + (request.form.get("usuario")
+                               or "").strip().lower()
+                   if request.form.get("usuario")
+                   else request.remote_addr or "anon"
+))
+@limiter.limit("30 per minute;300 per hour", methods=["POST"],
+               key_func=lambda: request.remote_addr or "anon")
 def login():
     if request.method == "POST":
         usuario = (request.form.get("usuario") or "").strip()
@@ -2462,6 +2520,7 @@ def api_admin_trocar_senha():
     ok = mod_usuarios.resetar_senha(usuario, nova)
     if not ok:
         return jsonify({"ok": False, "msg": "Usuário não encontrado"})
+    auditoria.registrar("trocar_senha", alvo=usuario)
     return jsonify({"ok": True,
                     "msg": f"Senha de '{usuario}' alterada com sucesso!"})
 
@@ -2478,6 +2537,9 @@ def api_admin_usuario_criar():
     tipo = d.get("tipo") if isinstance(d.get("tipo"), str) else ""
     senha = d.get("senha") if isinstance(d.get("senha"), str) else ""
     ok, msg = mod_usuarios.criar_usuario(usuario, nome, tipo, senha)
+    if ok:
+        auditoria.registrar("criar_usuario", alvo=usuario,
+                            detalhe=f"perfil={tipo}")
     return jsonify({"ok": ok, "msg": msg}), (200 if ok else 400)
 
 
@@ -2493,6 +2555,8 @@ def api_admin_usuario_excluir():
     if usuario.casefold() == str(session.get("usuario", "")).casefold():
         return jsonify({"ok": False, "msg": "Não é possível excluir a própria conta em uso."}), 400
     ok, msg = mod_usuarios.excluir_usuario(usuario)
+    if ok:
+        auditoria.registrar("excluir_usuario", alvo=usuario)
     return jsonify({"ok": ok, "msg": msg}), (200 if ok else 400)
 
 
@@ -2510,6 +2574,9 @@ def api_admin_usuario_perfil():
     if usuario.casefold() == str(session.get("usuario", "")).casefold():
         return jsonify({"ok": False, "msg": "Não é possível alterar o próprio perfil em uso."}), 400
     ok, msg = mod_usuarios.alterar_perfil_usuario(usuario, perfil_id)
+    if ok:
+        auditoria.registrar("alterar_perfil", alvo=usuario,
+                            detalhe=f"novo_perfil={perfil_id}")
     return jsonify({"ok": ok, "msg": msg}), (200 if ok else 400)
 
 
@@ -2530,6 +2597,9 @@ def api_admin_perfil_salvar():
     ):
         return jsonify({"ok": False, "msg": "Dados de perfil inválidos."}), 400
     ok, msg = permissoes.salvar_perfil(perfil_id or "", nome, lista_permissoes)
+    if ok:
+        auditoria.registrar("salvar_perfil", alvo=perfil_id or nome,
+                            detalhe=f"{len(lista_permissoes)} permissões")
     return jsonify({"ok": ok, "msg": msg}), (200 if ok else 400)
 
 
@@ -2544,6 +2614,8 @@ def api_admin_perfil_excluir():
         usuario.get("tipo") for usuario in mod_usuarios.carregar_usuarios()
     }
     ok, msg = permissoes.excluir_perfil(dados["id"], perfis_em_uso)
+    if ok:
+        auditoria.registrar("excluir_perfil", alvo=dados["id"])
     return jsonify({"ok": ok, "msg": msg}), (200 if ok else 400)
 
 

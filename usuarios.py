@@ -8,11 +8,29 @@ import tempfile
 import permissoes
 from werkzeug.security import check_password_hash, generate_password_hash
 
+try:
+    from filelock import FileLock, Timeout as FileLockTimeout
+    _HAS_FILELOCK = True
+except ImportError:
+    _HAS_FILELOCK = False
+
+    class FileLock:
+        def __init__(self, *a, **kw): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+
+    class FileLockTimeout(Exception):
+        pass
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DADOS = os.path.join(BASE_DIR, "dados")
 os.makedirs(DADOS, exist_ok=True)
 
 ARQ_USUARIOS = os.path.join(DADOS, "usuarios.json")
+LOCK_USUARIOS = FileLock(os.path.join(DADOS, ".usuarios.lock"), timeout=10)
+
+# Hash dummy para gastar tempo igual quando usuário não existe (timing attack)
+_HASH_DUMMY = generate_password_hash("senha_dummy_para_timing_equalizar")
 
 
 def _hash(senha):
@@ -43,7 +61,8 @@ def carregar_usuarios():
     with open(ARQ_USUARIOS, "r", encoding="utf-8") as f:
         usuarios = json.load(f)
     if not isinstance(usuarios, list):
-        raise ValueError("O arquivo de usuários precisa conter uma lista JSON.")
+        raise ValueError(
+            "O arquivo de usuários precisa conter uma lista JSON.")
     return usuarios
 
 
@@ -65,38 +84,55 @@ def _salvar(usuarios):
 
 def autenticar(usuario, senha):
     usuarios = carregar_usuarios()
+    alvo = None
     for u in usuarios:
-        if u.get("usuario") != usuario:
-            continue
-        senha_hash = u.get("senha_hash", "")
-        if re.fullmatch(r"[0-9a-fA-F]{64}", senha_hash):
-            legado = hashlib.sha256(senha.encode("utf-8")).hexdigest()
-            if not hmac.compare_digest(senha_hash.lower(), legado):
-                return None
-            u["senha_hash"] = _hash(senha)
-            _salvar(usuarios)
-            return u
+        if u.get("usuario") == usuario:
+            alvo = u
+            break
+
+    # Timing attack: gasta tempo igual mesmo se usuário não existe
+    if alvo is None:
         try:
-            if check_password_hash(senha_hash, senha):
-                return u
+            check_password_hash(_HASH_DUMMY, senha)
         except ValueError:
+            pass
+        return None
+
+    senha_hash = alvo.get("senha_hash", "")
+
+    # Hash legado SHA-256 sem salt → força migração imediata
+    if re.fullmatch(r"[0-9a-fA-F]{64}", senha_hash):
+        legado = hashlib.sha256(senha.encode("utf-8")).hexdigest()
+        if not hmac.compare_digest(senha_hash.lower(), legado):
             return None
+        with LOCK_USUARIOS:
+            lista = carregar_usuarios()
+            for u in lista:
+                if u.get("usuario") == usuario:
+                    u["senha_hash"] = _hash(senha)
+                    break
+            _salvar(lista)
+        return alvo
+
+    try:
+        if check_password_hash(senha_hash, senha):
+            return alvo
+    except ValueError:
+        return None
     return None
 
 
 def trocar_senha(usuario, senha_nova):
-    usuarios = carregar_usuarios()
-    for u in usuarios:
-        if u.get("usuario") == usuario:
-            u["senha_hash"] = _hash(senha_nova)
-            break
-    _salvar(usuarios)
+    with LOCK_USUARIOS:
+        usuarios = carregar_usuarios()
+        for u in usuarios:
+            if u.get("usuario") == usuario:
+                u["senha_hash"] = _hash(senha_nova)
+                break
+        _salvar(usuarios)
 
-
-# ===== NOVAS FUNÇÕES =====
 
 def listar():
-    """Retorna todos os usuários sem expor hash de senha."""
     nomes_perfis = {
         perfil["id"]: perfil["nome"]
         for perfil in permissoes.listar_perfis()
@@ -113,17 +149,17 @@ def listar():
 
 
 def resetar_senha(usuario, senha_nova):
-    """Admin redefine a senha de qualquer usuário."""
-    usuarios = carregar_usuarios()
-    achou = False
-    for u in usuarios:
-        if u.get("usuario") == usuario:
-            u["senha_hash"] = _hash(senha_nova)
-            achou = True
-            break
-    if achou:
-        _salvar(usuarios)
-    return achou
+    with LOCK_USUARIOS:
+        usuarios = carregar_usuarios()
+        achou = False
+        for u in usuarios:
+            if u.get("usuario") == usuario:
+                u["senha_hash"] = _hash(senha_nova)
+                achou = True
+                break
+        if achou:
+            _salvar(usuarios)
+        return achou
 
 
 def criar_usuario(usuario, nome, tipo, senha):
@@ -142,16 +178,17 @@ def criar_usuario(usuario, nome, tipo, senha):
     if len(senha) < 6:
         return False, "A senha deve ter ao menos 6 caracteres."
 
-    usuarios = carregar_usuarios()
-    if any(u.get("usuario", "").casefold() == usuario.casefold() for u in usuarios):
-        return False, "Esse nome de usuário já está cadastrado."
-    usuarios.append({
-        "usuario": usuario,
-        "senha_hash": _hash(senha),
-        "nome": nome,
-        "tipo": tipo,
-    })
-    _salvar(usuarios)
+    with LOCK_USUARIOS:
+        usuarios = carregar_usuarios()
+        if any(u.get("usuario", "").casefold() == usuario.casefold() for u in usuarios):
+            return False, "Esse nome de usuário já está cadastrado."
+        usuarios.append({
+            "usuario": usuario,
+            "senha_hash": _hash(senha),
+            "nome": nome,
+            "tipo": tipo,
+        })
+        _salvar(usuarios)
     return True, "Usuário criado."
 
 
@@ -160,34 +197,38 @@ def alterar_perfil_usuario(usuario, perfil_id):
         return False, "Dados inválidos."
     if not permissoes.obter_perfil(perfil_id):
         return False, "Perfil não encontrado."
-    usuarios = carregar_usuarios()
-    alvo = next(
-        (u for u in usuarios if u.get("usuario", "").casefold() == usuario.casefold()),
-        None,
-    )
-    if not alvo:
-        return False, "Usuário não encontrado."
-    if alvo.get("tipo") == "admin" and perfil_id != "admin" and sum(
-        u.get("tipo") == "admin" for u in usuarios
-    ) <= 1:
-        return False, "Não é possível remover o perfil TI do último administrador."
-    alvo["tipo"] = perfil_id
-    _salvar(usuarios)
+    with LOCK_USUARIOS:
+        usuarios = carregar_usuarios()
+        alvo = next(
+            (u for u in usuarios if u.get("usuario",
+             "").casefold() == usuario.casefold()),
+            None,
+        )
+        if not alvo:
+            return False, "Usuário não encontrado."
+        if alvo.get("tipo") == "admin" and perfil_id != "admin" and sum(
+            u.get("tipo") == "admin" for u in usuarios
+        ) <= 1:
+            return False, "Não é possível remover o perfil TI do último administrador."
+        alvo["tipo"] = perfil_id
+        _salvar(usuarios)
     return True, "Perfil do usuário atualizado."
 
 
 def excluir_usuario(usuario):
-    usuarios = carregar_usuarios()
-    alvo = next(
-        (u for u in usuarios if u.get("usuario", "").casefold() == usuario.casefold()),
-        None,
-    )
-    if not alvo:
-        return False, "Usuário não encontrado."
-    if alvo.get("tipo") == "admin" and sum(
-        u.get("tipo") == "admin" for u in usuarios
-    ) <= 1:
-        return False, "Não é possível excluir o último administrador."
+    with LOCK_USUARIOS:
+        usuarios = carregar_usuarios()
+        alvo = next(
+            (u for u in usuarios if u.get("usuario",
+             "").casefold() == usuario.casefold()),
+            None,
+        )
+        if not alvo:
+            return False, "Usuário não encontrado."
+        if alvo.get("tipo") == "admin" and sum(
+            u.get("tipo") == "admin" for u in usuarios
+        ) <= 1:
+            return False, "Não é possível excluir o último administrador."
 
-    _salvar([u for u in usuarios if u is not alvo])
+        _salvar([u for u in usuarios if u is not alvo])
     return True, "Usuário excluído."
